@@ -1,0 +1,235 @@
+#!/bin/perl
+#
+# This really should be make or ant or something.
+#
+# Note it must be run from the FileBunker/build directory, 
+# and it assumes there is a FileBunker/lib directory which
+# is essentially the same as the FileBunker/Resources/lib
+# directory where it can find jars and native libraries.
+#
+
+use strict;
+
+use FindBin;
+
+my $release;
+my $releaseDir;
+my $releaseArchive;
+
+my $version;
+my $launcher;
+
+sub isWindows
+{
+    return $^O =~ m/(win32|cygwin)/i;
+}
+
+my $buildStyle = isWindows() ? "win32" : "linux-gtk";
+
+sub usage
+{
+    print "mkrelease arguments:\n";
+    print "  -version <vers>    The version of the release.\n";
+    print "  -launcher <path>   The path to the launcher script or exe.\n";
+}
+
+sub fatal
+{
+    my $message = shift;
+    
+    if (defined($message)) {
+        printf "$message\n";
+    }
+    usage();
+    exit(1);
+}
+
+sub parseArgs
+{
+    my $i;
+    for ($i = 0; $i < @ARGV; $i++) {
+        my $arg = $ARGV[$i];
+        
+        if ($arg eq '-version') {
+            $version = $ARGV[++$i];
+        }
+        elsif ($arg eq '-launcher') {
+            $launcher = $ARGV[++$i];
+        }
+    }
+    
+    if (!defined($version)) {
+        fatal("must specify -version");
+    }
+    
+    if (!defined($launcher)) {
+        fatal("must specify -launcher <path>");
+    }
+    
+    if (!(-e $launcher)) {
+        fatal("$launcher does not exist");
+    }
+    
+}
+
+sub buildJar
+{
+    if (!(-e "../classes/com/toubassi/filebunker/ui/icons/file.gif")) {
+        die "Images are not in ../classes\n";
+    }
+    
+    !system("mkdir -p $releaseDir/Resources/lib")
+        or die "Cannot mkdir $releaseDir/Resources/lib: $!\n";
+        
+    !system("jar cf $releaseDir/Resources/lib/filebunker.jar -C ../classes .")
+        || die "Could not create jar: $!\n";
+}
+
+sub buildDoc
+{
+    !system("mkdir -p $releaseDir/Resources/doc")
+        or die "Cannot mkdir $releaseDir/Resources/doc: $!\n";
+        
+    !system("cp ../doc/Help.html ../doc/FAQ.html ../doc/License.html ../doc/styles.css $releaseDir/Resources/doc")
+        or die "Failed to copy documentation: $!\n";
+    
+    !system("cp ../doc/README $releaseDir/README")
+        or die "Failed to copy README: $!\n";
+    
+    open(FD, "> $releaseDir/Resources/doc/version.txt")
+        or die "Cannot open version.txt: $!\n";
+    
+    print FD "$version\n";
+    
+    close(FD);       
+}
+
+sub copyLauncher
+{
+    if ($buildStyle eq 'win32') {
+        !system("cp $launcher $releaseDir/FileBunker.exe")
+            or die "Could not copy launcher: $!\n";
+    }
+    else {
+        !system("cp $launcher $releaseDir/FileBunker")
+            or die "Could not copy launcher: $!\n";
+    }
+}
+
+sub buildConf
+{
+    !system("cat FileBunker-conf.head FileBunker-conf.$buildStyle >> $releaseDir/Resources/FileBunker.conf")
+        or die "Could not create conf file: $!\n";
+}
+
+sub copyJarsAndLibs
+{
+    !system("mkdir -p $releaseDir/Resources/lib/$buildStyle")
+        or die "Cannot make platform specific lib dir: $!\n";
+
+    !system("cp ../lib/*.jar $releaseDir/Resources/lib")
+        or die "Cannot copy jars: $!\n";
+
+    !system("cp ../lib/$buildStyle/*.jar $releaseDir/Resources/lib/$buildStyle")
+        or die "Cannot copy jars: $!\n";    
+
+    if ($buildStyle eq 'win32') {
+        !system("cp ../lib/$buildStyle/*.dll $releaseDir/Resources/lib/$buildStyle")
+            or die "Cannot copy dlls: $!\n";    
+    }
+    else {
+        !system("cp ../lib/$buildStyle/*.so $releaseDir/Resources/lib/$buildStyle")
+            or die "Cannot copy .so files: $!\n";    
+    }
+}
+
+sub setPermissions
+{
+    if ($buildStyle ne 'linux-gtk') {
+        return;
+    }
+    
+    system("find $releaseDir -type d -exec chmod 755 \\{\\} \\;");
+    system("find $releaseDir -type f -exec chmod 644 \\{\\} \\;");
+    system("chmod 755 $releaseDir/Resources/lib/$buildStyle/*.so");
+    system("chmod 755 $releaseDir/FileBunker");
+    my $command = "su root -c \"chown -R nobody:nogroup $releaseDir\"";
+    print "Will execute: $command\n";
+    system($command);
+}
+
+sub buildArchive
+{
+    my $returnValue;
+
+    if ($buildStyle eq 'linux-gtk') {
+        # First set the permissions
+    
+        $returnValue = system("cd ../release ; tar cjf $releaseArchive $release");
+    }
+    else {
+        $returnValue = system("cd ../release ; zip -qr9 $releaseArchive $release");
+    }    
+    
+    if ($returnValue) {
+        die "Could not make archive: $!\n";
+    }
+}
+
+sub buildSourceArchive()
+{
+    !system("cd ../..; zip -qr9 FileBunker/release/FileBunker-$version-src.zip FileBunker/README FileBunker/doc FileBunker/build FileBunker/src FileBunker/testing")
+        or die "Could not create source zip file: $!\n";
+}
+
+sub main
+{
+    parseArgs();
+    
+    $release = "FileBunker-$version-$buildStyle";
+    $releaseDir = "../release/$release";
+
+    if ($buildStyle eq 'linux-gtk') {
+        $releaseArchive = "$releaseDir.tar.bz2";
+    }
+    else {
+        $releaseArchive = "$releaseDir.zip";
+    }    
+
+    if (-d $releaseDir) {
+        die "$releaseDir already exists\n";
+    }
+    if (-e $releaseArchive) {
+        die "$releaseArchive already exists\n";
+    }
+
+    !system("mkdir -p $releaseDir")
+        or die "Cannot mkdir $releaseDir: $!\n";
+
+    print "Building documentation\n";
+    buildDoc();
+
+    print "Copying the launcher\n";
+    copyLauncher();
+
+    print "Copying the configuration file\n";
+    buildConf();        
+
+    print "Copying libraries\n";
+    copyJarsAndLibs();
+
+    print "Building the main application jar\n";
+    buildJar();
+
+    print "Setting permissions\n";
+    setPermissions();
+
+    print "Building the release archive\n";
+    buildArchive();
+
+    print "Building the source archive\n";
+    buildSourceArchive();
+}
+
+
+main();

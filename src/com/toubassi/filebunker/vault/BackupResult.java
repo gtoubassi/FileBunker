@@ -1,0 +1,107 @@
+/*
+
+Copyright (c) 2004, Garrick Toubassi
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the "Software"),
+to deal in the Software without restriction, including without limitation
+the rights to use, copy, modify, merge, publish, distribute, sublicense,
+and/or sell copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+*/
+
+/*
+ * Created on Aug 22, 2004
+ */
+package com.toubassi.filebunker.vault;
+
+
+/**
+ * @author garrick
+ */
+public class BackupResult
+{
+    private int numberOfFiles;
+    private long totalBytes;
+    private long totalBackedupBytes;
+    private long startMillis;
+    private long endMillis;
+
+    public void add(FileRevision revision)
+    {
+        numberOfFiles++;
+        totalBytes += revision.size();
+        totalBackedupBytes += revision.backedupSize();
+        
+        if (startMillis == 0) {
+            startMillis = System.currentTimeMillis();
+        }
+        if (endMillis != 0) {
+            // We must not be done yet.  Somebody might
+            // call backupDuration during an operation.
+            endMillis = 0;
+        }
+    }
+        
+    /**
+     * Returns the duration of the operation in milliseconds.  The
+     * duration is from the time of the first call to "add", and the
+     * time to the first call to this method not followed by another
+     * call to "add".
+     */
+    public long backupDuration()
+    {
+        if (startMillis == 0) {
+            // Never started
+            return 0;
+        }
+        if (endMillis == 0) {
+            endMillis = System.currentTimeMillis();
+        }
+        return endMillis - startMillis;
+    }
+    
+    public int numberOfFiles()
+    {
+        return numberOfFiles;
+    }
+    
+    public long totalBytes()
+    {
+        return totalBytes;
+    }
+    
+    public long totalBackedupBytes()
+    {
+        return totalBackedupBytes;
+    }
+    
+    public float compressionRatio()
+    {
+        return ((float)totalBackedupBytes)/((float)totalBytes);
+    }
+    
+    public String toString()
+    {
+        StringBuffer buffer = new StringBuffer();
+        buffer.append(numberOfFiles);
+        buffer.append(" files  ");
+        buffer.append(totalBytes);
+        buffer.append(" bytes  ");
+        buffer.append(totalBackedupBytes);
+        buffer.append(" backed up bytes");
+        return buffer.toString();
+    }
+}

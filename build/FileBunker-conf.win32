@@ -1,0 +1,4 @@
+ClassPath %INSTALLDIR%/Resources/lib/win32/swt.jar
+
+VMArgument -Djava.library.path=%INSTALLDIR%/Resources/lib/win32
+

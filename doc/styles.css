@@ -1,0 +1,17 @@
+body {
+    font-family : trebuchet ms, verdana, arial, sans-serif;
+    color : #000;
+    font-size : 14px;
+    font-weight : normal;
+}	
+
+td {
+    font-family : trebuchet ms, verdana, arial, sans-serif;
+    color : #000;
+    font-size : 14px;
+    font-weight : normal;
+}	
+
+.helptext {
+    padding-left : .25in;        
+}

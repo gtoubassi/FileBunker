@@ -1,0 +1,106 @@
+<html>
+<link rel="stylesheet" href="styles.css" type="text/css"/>
+<body>
+
+<h1>FileBunker Help</h1>
+
+<p>
+<a href="#intro">Introduction</a></br>
+<a href="#config">Configuring Filebunker</a></br>
+<a href="#backup">Backing up files</a></br>
+<a href="#restore">Restoring files</a></br>
+
+
+<p>
+<h3><a name="intro">Introduction</a></h3>
+<p class=helptext>
+
+FileBunker is a file backup application which uses one or more GMail accounts as a free, offsite backup repository.  While you may dutifully backup your data by burning CDs or writing tapes, in most cases those tapes end up sitting on the shelf, mere feet away from the hard drive whose data is being backed up.  This data is vulnerable to a catastrophic event such as fire, flood, or earthquake.  By sending data offsite this problem is resolved.
+
+<p class=helptext>
+You would typically run FileBunker periodically (perhaps weekly) to keep the backup repository current, and in the rare case of an accidental deletion, or, worse yet a disaster, would use FileBunker to restore some or all of the backed up files.
+
+<p class=helptext>
+The following document will explain how to use FileBunker.  If you have remaining questions you can also consult the <a href="FAQ.html">Frequently Asked Questions</a> for more information.
+
+<p>
+<h3><a name="config">Configuring Filebunker</a></h3>
+<p class=helptext>
+
+Before FileBunker can be used to backup your files, you need to configure the application.  This is done by choosing <b>Configuration</b> from the <b>File</b> menu.  The following describes the information that must be provided to complete this configuration.
+
+<p class=helptext>
+<b>FileBunker Password</b>
+
+<p class=helptext>
+First and foremost, FileBunker requires you to establish a password.  This password is used to encrypt the data that you backup so that it is secure.  Longer passwords are better, and you should not use a password which coincides with the password to any of the GMail accounts that you are using for backups.  Note in order to make sure your password is correctly recorded, you must type it again in the <b>Confirm Password</b> field.
+
+<p class=helptext>
+<b>SMTP Server</b>
+
+<p class=helptext>
+FileBunker transfers files to GMail by sending them using the standard email transfer protocol SMTP.  You must identify an SMTP server that will send your email.  This is usually an address like smtp.mycompany.com, or mail.myisp.com.  If you are not sure what to specify, check the account configuration in your email application (such as Outlook or Eudora), or contact your ISP.
+
+<p class=helptext>
+Some SMTP servers require authentication in order to transfer messages.  This involves specifying a user name and password which is used to authenticate you to the SMTP server.  If your server requires this authentication, check the <b>Requires Authentication</b> checkbox, and click the <b>Configure</b> button to specify the user name and password.  As with establishing your FileBunker password, you will need to confirm your password to make sure it is correctly recorded.  Again, check the configuration of your email application, or contact your ISP, if you are not sure whether your SMTP server requires authentication.
+
+
+<p class=helptext>
+<b>Email Repositories</b>
+
+<p class=helptext>
+Finally, and perhaps most importantly, in order to perform any backups you need to specify one or more GMail accounts which your files will be sent to.
+
+<p class=helptext>
+Clicking the <b>New</b> button will prompt you to specify the email address and password for an existing GMail account.  Note the '@gmail.com' is already specified, so you will only need to specify the user name (<i>e.g. jsmith</i>).  As with other password fields in this configuration, you will need to confirm the password to ensure it is recorded correctly.  After pressing <b>OK</b> you will be returned to the main configuration dialog, and you will see the new account in the Email Repositories list.  You can select it, and click <b>Edit</b> to change the details of that account, or <b>Delete</b> to remove it.
+
+<p class=helptext>
+Each GMail account gives you 1000 megabytes of storage.  You can register multiple accounts at any time as your storage requirements grow.  FileBunker will automatically use a new account as old ones are filled up.
+
+<p class=helptext>
+<b>NOTE</b> If you delete an account that already has files backed up to it, those files will not be accessible from FileBunker.
+
+
+<p>
+<h3><a name="backup">Backing up files</a></h3>
+<p class=helptext>
+Now that you have configured FileBunker, you are ready to backup your critical files.  In the main FileBunker window you will see two tabs: <b>Backup</b> and <b>Restore</b>.  In this section of the help, where we deal with backing up files, we will be confining ourselves to the <b>Backup</b> tab.
+
+<p class=helptext>
+In the backup tab, you will see a file explorer that shows you the files on your hard drive.  The folder hierarchy is visible and navigable on the left.  You can expand and collapse folders by clicking on the +/- next to them, or double-clicking on the folder name.  On the right, the files and folders in the currently selected folder are displayed.
+
+<p class=helptext>
+You will notice that each file and folder has a checkbox to its left.  When this box is checked, that file or folder you are indicating that you would like it backed up during the next backup operation.  Note that checking a folder automatically checks all files and folders inside of it, and unchecking a folder unchecks all inside files and folders.
+
+<p class=helptext>
+<b>EXAMPLE</b> A user John Smith wants to back up his entire <b>My Documents</b> directory except for his mp3 collection which is stored in My Documents\Media.  He would navigate to the My Documents folder, and check it, causing all nested files and folders to be checked.  He then would navigate into the Media directory, and <i>uncheck</i> the mp3 folder.
+
+<p class=helptext>
+<b>HINT</b> A convenient description of the current backup selection is provided underneath the backup explorer.  For instance in the above example, when John checks My Documents, the description reads "Backup all files under <font color=blue>C:\Documents and Settings\jsmith\My Documents</font>."  When he unchecks the mp3 folder, it will update to read "Backup all files under <font color=blue>C:\Documents and Settings\jsmith\My Documents</font>, except for <font color=red>C:\Documents and Settings\jsmith\My Documents\Media\mp3</font>."
+
+<p class=helptext>
+After you have selected the files you wish to backup, simply click the <b>Backup</b> button in the lower right of the window.  FileBunker will take a few moments to verify that you have enough space in your GMail account(s) to store the files, and then will begin encrypting and emailing them.  While a small number of files can be backed up in a matter of seconds, large backup operations can take hours.  You can cancel the operation at any time, and FileBunker will remember exactly which files were backed up.  When the backup is complete you will be told how many files were backed up, the size of those files, and how long it took.
+
+<p class=helptext>
+At this point, you have setup your backup selection, and now future backups are a snap.  Simply launch FileBunker, and click the <b>Backup</b> button.  It will remember your selection, and will only backup files that have changed since your last backup.  So while the first backup may take awhile, subsequent backups will be much faster.
+
+
+<p>
+<h3><a name="restore">Restoring files</a></h3>
+<p class=helptext>
+In the unfortunate event that you need to restore a file or folder, you can do so by selecting the <b>Restore</b> tab.
+
+<p class=helptext>
+The <b>Restore</b> tab is organized much like the Backup tab, except that it only shows you files that are in your backup repository (your collective GMail accounts).  You can navigate to any file or folder, select it, and click the <b>Restore</b> button to retrieve it.  In the case of restoring a single file, you will be prompted for a name to restore the file as.  In the case of restoring multiple files or one or more folders, you will prompted to specify a folder into which the restored files will be saved.  After the destination file or folder is specified, the restore operation begins.  Progress is shown as the operation proceeds, and you can cancel at any time.  When the restore is complete, you will be told how many files were restored, the size of those files, and how long it took.
+
+<p class=helptext>
+If you have performed more than one backup operation, a drop down list appears in the upper right corner of the FileBunker window.  This list lets you select from a list of dates representing prior backup operations.  By default the latest date is selected, showing you the state of your files on that date.  You can select earlier dates and you will see the state of your files as of that backup operation.  These dates similarly filter which version of the files you are viewing, and thus which version you are retrieving when you perform a restore.  In some cases multiple versions of a given file will be stored in your backup repository, and any of these versions can be retrieved.
+
+<p class=helptext>
+Another way to explore the history of your backed up files is to right click on any file and select <b>Show History</b> from the context menu.  You will be presented with a dialog showing all the dates that the file was backed up, and from this dialog you can restore any version.
+
+<p class=helptext>
+Note that the <b>Restore</b> tab has a description at the bottom of the restore explorer that shows the current selection.  It tells you what all will be restored if you click the <b>restore</b> button.
+
+</body>
+</html>

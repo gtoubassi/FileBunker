@@ -1,0 +1,23 @@
+PreferredVM 1.4.2_05
+MinimumVM 1.4.2_05
+MainClass com.toubassi.filebunker.ui.FileBunker
+
+JavaArgument -config
+JavaArgument %APPDATADIR%/Default.bunker
+
+ClassPath %INSTALLDIR%/Resources/lib/filebunker.jar
+ClassPath %INSTALLDIR%/Resources/lib/text.jar
+ClassPath %INSTALLDIR%/Resources/lib/osgi.jar
+ClassPath %INSTALLDIR%/Resources/lib/runtime.jar
+ClassPath %INSTALLDIR%/Resources/lib/jface.jar
+ClassPath %INSTALLDIR%/Resources/lib/jfacetext.jar
+ClassPath %INSTALLDIR%/Resources/lib/httpunit-1.5.4x.jar
+ClassPath %INSTALLDIR%/Resources/lib/activation.jar
+ClassPath %INSTALLDIR%/Resources/lib/js.jar
+ClassPath %INSTALLDIR%/Resources/lib/nekohtml.jar
+ClassPath %INSTALLDIR%/Resources/lib/mail.jar
+ClassPath %INSTALLDIR%/Resources/lib/smtp.jar
+ClassPath %INSTALLDIR%/Resources/lib/subx-common-0.85.jar
+ClassPath %INSTALLDIR%/Resources/lib/xercesImpl.jar
+ClassPath %INSTALLDIR%/Resources/lib/xmlParserAPIs.jar
+

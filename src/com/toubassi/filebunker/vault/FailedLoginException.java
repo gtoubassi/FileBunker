@@ -1,0 +1,69 @@
+/*
+
+Copyright (c) 2004, Garrick Toubassi
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the "Software"),
+to deal in the Software without restriction, including without limitation
+the rights to use, copy, modify, merge, publish, distribute, sublicense,
+and/or sell copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+*/
+
+/*
+ * Created on Jul 29, 2004
+ */
+package com.toubassi.filebunker.vault;
+
+
+/**
+ * An exception
+ * @author garrick
+ */
+public class FailedLoginException extends VaultException
+{
+    private FileStore store;
+    
+    public FailedLoginException()
+    {
+        super();
+    }
+
+    public FailedLoginException(String message)
+    {
+        this(message, null, null);
+    }
+
+    public FailedLoginException(String message, Throwable cause)
+    {
+        this(message, cause, null);
+    }
+
+    public FailedLoginException(String message, FileStore store)
+    {
+        this(message, null, store);
+    }
+
+    public FailedLoginException(String message, Throwable cause, FileStore store)
+    {
+        super(message, cause);
+        this.store = store;
+    }
+    
+    public FileStore store()
+    {
+        return store;
+    }
+}

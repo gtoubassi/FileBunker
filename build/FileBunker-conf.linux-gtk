@@ -1,0 +1,4 @@
+ClassPath %INSTALLDIR%/Resources/lib/linux-gtk/swt.jar
+ClassPath %INSTALLDIR%/Resources/lib/linux-gtk/swt-pi.jar
+
+VMArgument -Djava.library.path=%INSTALLDIR%/Resources/lib/linux-gtk

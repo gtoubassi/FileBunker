@@ -1,0 +1,184 @@
+
+Identify a gmail account for testing.  Preferably you would delete all emails from that account (everything in "all mail", and trash).
+
+cp -r testing/samplefiles to testing/files
+
+Unconfigured FileBunker
+=======================
+
+Start with an unconfigured FileBunker (meaning the configPath points to an empty directory).
+
+Run FileBunker and confirm that the Backup tab shows the file explorer.  The restore tab should be blank.
+
+The Backup button on the backup tab should be disabled.  Navigate to a file in the explorer, and check it.  The backup button should be enabled.  Click the backup button.  You should be presented with a dialog prompting you to configure FileBunker.
+
+
+Configuration
+=============
+
+Bring up the Configuration dialog (File->Configuration).  Configure the application, testing for mailformed email addresses, mismatching passwords, etc.  
+
+Try adding the same gmail account twice, which should not be allowed.
+
+After configuring the application, within 10 seconds the total size of the gmail repository should be displayed in the status bar at the bottom of the window.
+
+
+Cancel a Backup
+===============
+
+First, backup file/file1.txt.  Cancel the backup operation while it is backing up (not while it is scanning).  Wait a minute and log into your gmail account and see if any FileBunker emails were sent.  Make sure to check "All Mail" for the files as they may have been moved from the inbox.  No emails should be seen.
+
+Go to the restore tab.  It still should be blank.
+
+
+Single File Backup
+==================
+
+Now backup file/file1.txt and let it complete.
+
+Backup file/file1.txt again and verify that no files are in need of backup.
+
+Verify that two emails were received in your gmail account (One of them is the index).  This may take awhile (on rare occassions up to 12 hours!).
+
+Go to the restore tab.  There should now be an explorer which only shows file/file1.txt.  There should be no combobox in the upper right of the window.
+
+Select the file in the restore tab.  Right click on it and select "Show History".  There should be one entry with the date of the backup.  Double click the entry.  You should be prompted with a save dialog.  Hit cancel.
+
+
+Single File Restore
+===================
+
+Click the restore button in the lower right of the screen.  The restore destination for the file should be in the same place as the original, but with the name file1-restore.txt.  Click ok.  While the file is downloading, hit cancel.  Confirm that no file was created.
+
+Restore the file again to the same location, but this time let it run to completion.  In a shell cmp the file with the original to make sure it is the same.  Now delete it.
+
+
+Incremental Single File Backup and File History
+===============================================
+
+In a shell, 'echo "Version 2" >> file1.txt'
+
+In the backup tab, select the file and click "backup".  The file should be backed up.  Verify that two new files appear in your gmail account (remember to check "All Mail").
+
+Go to the restore tab and verify that you see a combo box in the upper right of the window.  It should have three entries:
+
+    Show all files ever backed up
+    Show files up to (most recent backup date)
+    Show files up to (first backup date).
+
+The most recent backup date (the first one in the list) should be selected.  NOT "show all files ever backed up".
+
+
+Restoring Multiple Versions of a Single File
+============================================
+
+Navigate to file1.txt in the restore explorer.  The date in the explorer for file1.txt should correspond to the date in the combobox.  Switch to the earlier date.  The date in the explorer should update.
+
+Select file1.txt and restore it to file1-restore.txt.
+
+Now change the date back to the most recent backup date.  Now restore file1.txt to file1-restore2.txt.
+
+In a shell, cmp file1-restore2.txt with file1.txt.  They should be the same.  Now diff file1-restore2.txt and file1-restore.txt.  The only difference should be the last line "Version 2".
+
+rm file/file1-restore*
+
+
+Directory Backup
+================
+
+In the backup tab, select the files directory and click backup.  The backup should be quick as only the small files need to be backed up (file1.txt is the only large file, and it hasn't been touched since its last backup).  4 new files should appear in your gmail account (bringing the grand total to 8).
+
+Go to the restore tab.  The combobox should now have three dates, with the most recent selected.  file1.txt should have the date of the second backup, but file2.txt and subdir/subfile* should have the new date.
+
+Change the combobox to one of the earlier dates.  The explorer should refresh and should only have the file/file1.txt.  Change it back to the most recent date.  Now all files should be visible.
+
+
+Directory Restore
+=================
+
+Click on the files directory in the restore explorer and click the restore button.  Give the directory a new name.  cmp all four files in the restored directory with the four files in the original directory to make sure they are the same.
+
+
+Incremental Directory Restore and File/Directory Duality
+========================================================
+
+In a shell in subdir:
+    rm subfile2.txt.
+    echo "Version 2" >> subfile1.txt
+    echo "fileordir" > fileordir
+
+In the backup tab, backup the files directory again.  3 new messages will appear in your gmail account (grand total of 11 now).
+
+In a shell in subdir:
+    rm fileordir
+    mkdir fileordir
+    echo "subsubfile.txt" > fileordir/subsubfile.txt
+
+In the backup tab, backup the files directory again.  2 new messages will appear in your gmail account (grand total of 13 now).
+
+Now go to the restore tab and verify that the most recent date is selected in the combobox.  Verify that fileordir is presented as a directory, with fileordir/subsubfile.txt inside.  Also verify that subdir/subfile2.txt is not there.
+
+Now select "Show all files ever backed up" in the combobox.  Now there should be two fileordir, one a file, and one a dir.  Also, subdir/subfile2.txt should be back.
+
+Now go back to the second to most recent date in the combobox.  Now fileordir should appear once, as a file.  Also, subdir/subfile2.txt should not be there.
+
+Now go back to the third most recent date in the combobox.  Now fileordir is not there, and subfile2.txt is there.
+
+Restore the entire files directory three times, each using the three most recent backup dates in the combobox, naming them files-mostrecent, files-2ndmostrecent, files-3rdmostrecent.
+
+Verify the characteristics of each directory:
+
+    files-mostrecent:
+        subfile1.txt has a Version 2 line in it.
+        subfile2.txt is absent.
+        fileordir is a direcotry, with subsubfile.txt in it with one line.
+        file/file1.txt is present with Version 2 at the end
+        file/file2.txt are present with one line
+        
+    files-2ndmostrecent:
+        subfile1.txt has a Version 2 line in it.
+        subfile2.txt is absent.
+        fileordir is a file with one line.
+        file/file1.txt is present with Version 2 at the end
+        file/file2.txt are present with one line
+        
+    files-3rdmostrecent:
+        subfile1.txt has only one line in it.
+        subfile2.txt is present with one line.
+        fileordir is absent.
+        file/file1.txt is present with Version 2 at the end
+        file/file2.txt are present with one line
+
+
+Passwords
+=========
+
+Change your FileBunker password in the Configuration dialog.  Quit and restart FileBunker to verify that it is now accepting only the new password to login.
+
+From within the files directory:
+    
+    echo "Version 2" >> file/file2.txt
+
+Backup file/file2.txt.  The file should be backed up.  Wait until it appears in your gmail account.
+
+From the restore tab, bring up the history of file2.txt, and restore the most recent version, as well as the 2nd most recent (which was encrypted with the old password).  Verify that both files have the correct contents, and only differ by the "Version 2" line.
+
+
+Inbox Cleanup
+=============
+
+Make sure that no FileBunker backup messages remain in your inbox.  They should all be moved to your All Mail folder.
+
+
+Large Files
+===========
+
+Find a file that is large enough to require splitting (after compression).  A file that is over 10mb when compressed (with gzip) will do.  Backup that file.  Confirm that a multiple messages appear in your gmail account (each part has a [n] at the end of the subject where n is the part number).
+
+Make sure you can restore that file.
+
+
+Deleting an Email Repository
+============================
+
+Delete your email repository from the Configuration dialog and verify that the restore tab is now empty.

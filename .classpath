@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="lib" path="C:/garrick/dev/FileBunker/lib/mail.jar"/>
+	<classpathentry kind="lib" path="C:/garrick/dev/FileBunker/lib/smtp.jar"/>
+	<classpathentry kind="lib" path="C:/garrick/dev/FileBunker/lib/activation.jar"/>
+	<classpathentry kind="lib" path="C:/garrick/dev/FileBunker/lib/xmlParserAPIs.jar"/>
+	<classpathentry kind="lib" path="C:/garrick/dev/FileBunker/lib/js.jar"/>
+	<classpathentry sourcepath="C:/garrick/dev/3rdParty/nekohtml-0.9.3/src/html" kind="lib" path="C:/garrick/dev/FileBunker/lib/nekohtml.jar"/>
+	<classpathentry kind="lib" path="C:/garrick/dev/FileBunker/lib/xercesImpl.jar"/>
+	<classpathentry kind="lib" path="C:/garrick/dev/FileBunker/lib/httpunit-1.5.4x.jar"/>
+	<classpathentry kind="lib" path="C:/garrick/dev/FileBunker/lib/text.jar"/>
+	<classpathentry sourcepath="C:/garrick/dev/3rdParty/swt/src" kind="lib" path="C:/garrick/dev/FileBunker/lib/win32/swt.jar"/>
+	<classpathentry sourcepath="C:/eclipse3/plugins/org.eclipse.platform.source_3.0.0/src/org.eclipse.jface_3.0.0" kind="lib" path="C:/garrick/dev/FileBunker/lib/jface.jar"/>
+	<classpathentry sourcepath="C:/eclipse3/plugins/org.eclipse.platform.source_3.0.0/src/org.eclipse.core.runtime_3.0.0/runtimesrc.zip" kind="lib" path="C:/garrick/dev/FileBunker/lib/runtime.jar"/>
+	<classpathentry kind="lib" path="C:/garrick/dev/FileBunker/lib/osgi.jar"/>
+	<classpathentry kind="lib" path="C:/garrick/dev/FileBunker/lib/jfacetext.jar"/>
+	<classpathentry sourcepath="C:/garrick/dev/3rdParty/subx-common-0.85" kind="lib" path="C:/garrick/dev/FileBunker/lib/subx-common-0.85.jar"/>
+	<classpathentry kind="output" path="classes"/>
+</classpath>

@@ -1,0 +1,387 @@
+<html>
+<link rel="stylesheet" href="styles.css" type="text/css"/>
+<body>
+
+<p>
+<h1>FileBunker FAQ</h1>
+
+<br/>
+
+<p>
+<table>
+    <tr>
+        <td valign=top>
+            1.
+        </td><td></td>
+        <td>
+            <a href="#1">What is FileBunker?</a>
+        </td>
+    </tr>
+
+    <tr>
+        <td valign=top>
+            2.
+        </td><td></td>
+        <td>
+            <a href="#2">How do I get a GMail account?</a>
+        </td>
+    </tr>
+
+    <tr>
+        <td valign=top>
+            3.
+        </td><td></td>
+        <td>
+            <a href="#3">What happens if I run out of space in my GMail account?</a>
+        </td>
+    </tr>
+
+    <tr>
+        <td valign=top>
+            4.
+        </td><td></td>
+        <td>
+            <a href="#4">Can I use my GMail account while also using it as a FileBunker repository?</a>
+        </td>
+    </tr>
+
+    <tr>
+        <td valign=top>
+            5.
+        </td><td></td>
+        <td>
+            <a href="#5">What do FileBunker backup email messages look like in my GMail account?</a>
+        </td>
+    </tr>
+
+    <tr>
+        <td valign=top>
+            6.
+        </td><td></td>
+        <td>
+            <a href="#6">Will FileBunker backup emails clutter my GMail inbox?</a>
+        </td>
+    </tr>
+
+    <tr>
+        <td valign=top>
+            7.
+        </td><td></td>
+        <td>
+            <a href="#7">Are my files secure?</a>
+        </td>
+    </tr>
+
+    <tr>
+        <td valign=top>
+            8.
+        </td><td></td>
+        <td>
+            <a href="#8">Why do I need to establish a 'FileBunker' password?</a>
+        </td>
+    </tr>
+
+    <tr>
+        <td valign=top>
+            9.
+        </td><td></td>
+        <td>
+            <a href="#21">What happens if I change my password after backing up files?  Can I restore those files even though they were encrypted with the old password?</a>
+      </td>
+    </tr>
+
+    <tr>
+        <td valign=top>
+            10.
+        </td><td></td>
+        <td>
+            <a href="#9">Whats an SMTP server and why do I need to specify it for FileBunker to work?</a>
+        </td>
+    </tr>
+
+    <tr>
+        <td valign=top>
+            11.
+        </td><td></td>
+        <td>
+            <a href="#10">Why does it take so long to backup files?</a>
+        </td>
+    </tr>
+
+    <tr>
+        <td valign=top>
+            12.
+        </td><td></td>
+        <td>
+            <a href="#22">What kind of compression ratios can I expect?</a>
+        </td>
+    </tr>
+
+    <tr>
+        <td valign=top>
+            13.
+        </td><td></td>
+        <td>
+            <a href="#11">Why isn't FileBunker backing up the files in my selection?</a>
+        </td>
+    </tr>
+
+    <tr>
+        <td valign=top>
+            14.
+        </td><td></td>
+        <td>
+            <a href="#12">I just backed up a file and I can't restore it.  What gives?</a>
+        </td>
+    </tr>
+
+    <tr>
+        <td valign=top>
+            15.
+        </td><td></td>
+        <td>
+            <a href="#13">Can I run FileBunker automatically as an NT Service?</a>
+        </td>
+    </tr>
+
+    <tr>
+        <td valign=top>
+            16.
+        </td><td></td>
+        <td>
+            <a href="#14">What happens if GMail changes in a way that 'breaks' FileBunker?  Can I still get my files?</a>
+        </td>
+    </tr>
+
+    <tr>
+        <td valign=top>
+            17.
+        </td><td></td>
+        <td>
+            <a href="#15">Can I retrieve my files from other computers?</a>
+        </td>
+    </tr>
+
+    <tr>
+        <td valign=top>
+            18.
+        </td><td></td>
+        <td>
+            <a href="#24">How will my ISP feel about me emailing thousands of files to my GMail account as part of a major backup?</a>
+        </td>
+    </tr>
+
+    <tr>
+        <td valign=top>
+            19.
+        </td><td></td>
+        <td>
+            <a href="#16">Is there a command line version of FileBunker?</a>
+        </td>
+    </tr>
+
+    <tr>
+        <td valign=top>
+            20.
+        </td><td></td>
+        <td>
+            <a href="#17">Why does FileBunker once in awhile ask me to type in strange characters from an image?</a>
+        </td>
+    </tr>
+
+    <tr>
+        <td valign=top>
+            21.
+        </td><td></td>
+        <td>
+            <a href="#23">Why can't I see D:\?</a>
+        </td>
+    </tr>
+
+    <tr>
+        <td valign=top>
+            22.
+        </td><td></td>
+        <td>
+            <a href="#18">What is Java and where do I get it?</a>
+        </td>
+    </tr>
+
+    <tr>
+        <td valign=top>
+            23.
+        </td><td></td>
+        <td>
+            <a href="#19">How do I run FileBunker on MacOSX?</a>
+        </td>
+    </tr>
+
+    <tr>
+        <td valign=top>
+            24.
+        </td><td></td>
+        <td>
+            <a href="#20">Can I use FileBunker with a Yahoo! Mail Plus account?</a>
+        </td>
+    </tr>
+</table>
+
+<br/>
+<br/>
+
+<p>
+<a name="1"><b>What is FileBunker?</b></a>
+
+<p>
+FileBunker is a file backup application which uses one or more GMail accounts as its backup repository.  Because each GMail account supplies 1000 megabytes of storage, it serves as an excellent facility for this purpose.
+
+
+<p><hr>
+<a name="2"><b>How do I get a GMail account?</b></a>
+
+<p>
+Currently GMail accounts are by "invitation" only, which means you need to know someone who has a GMail account that can invite you.  Ask that person to login to their GMail account and look for the "Invite a friend to join Gmail!" link.  Presumably in the near future these accounts will be available to anyone similar to Yahoo Mail or Hotmail.
+
+
+<p><hr>
+<a name="3"><b>What happens if I run out of space in my GMail account?</b></a>
+
+<p>
+FileBunker automatically compresses your files so they will occupy less space in your GMail account.  If your account becomes full, FileBunker will automatically delete messages that represent files that have multiple versions already backed up.  FileBunker will never delete the last version of a file stored in your GMail account.  You can also acquire multiple GMail accounts, and configure FileBunker with all of them.  It will automatically "overflow" from a full GMail account to one that has space.
+
+<p><hr>
+<a name="4"><b>Can I use my GMail account while also using it as a FileBunker repository?</b></a>
+
+<p>
+Sure.  FileBunker accesses your GMail account to see how much space is available, and will only backup files to that account which can fit in the available space.
+
+<p><hr>
+<a name="5"><b>What do FileBunker backup email messages look like in my GMail account?</b></a>
+
+<p>
+FileBunker backup email messages have a subject line like:<br>
+<tt>
+    FileBunker: AAAA/ulSTECt9YxEAAAAAQ [0]
+</tt>
+
+<p><hr>
+<a name="6"><b>Will FileBunker backup emails clutter my GMail inbox?</b></a>
+
+<p>
+Generally speaking, no.  When FileBunker runs it periodically tries to archive these messages for you so you never see them.  At times you may see some backup emails in your inbox.  If so, just select those messages and Archive them.
+
+<p><hr>
+<a name="7"><b>Are my files secure?</b></a>
+
+<p>
+FileBunker automatically encrypts your files before sending them using the password you provide in the FileBunker configuration dialog.  This password is stored securely on your computer and is never sent to your GMail account or anywhere else.  The passwords you specify for your GMail accounts are also stored securely.
+
+<p><hr>
+<a name="8"><b>Why do I need to establish a 'FileBunker' password?</b></a>
+
+<p>
+FileBunker uses this password to securely encrypt your files before sending them to your GMail account.  See the FAQ <a href="#7">Are my files secure?</a>
+
+<p><hr>
+<a name="21"><b>What happens if I change my password after backing up files?  Can I restore those files even though they were encrypted with the old password?</b></a>
+
+<p>
+FileBunker remembers all of your passwords (and when they were in effect) so that old files can be retrieved and decoded with the correct one.  All of these passwords are stored securely.
+
+<p><hr>
+<a name="9"><b>Whats an SMTP server and why do I need to specify it for FileBunker to work?</b></a>
+
+<p>
+An SMTP server is a computer that can send emails.  This is necessary so that FileBunker can email your files to your GMail account.  Usually your SMTP server can be retrieved from the account configuration in your Email application.  For instance, in Outlook, check Tools->Account->Properties->Servers.
+
+<p><hr>
+<a name="10"><b>Why does it take so long to backup files?</b></a>
+
+<p>
+Remember that over a DSL connection, upload speeds are usually around 25Kb per second or less.  If you are backing up 100Mb, that would take roughly 30 minutes assumming a 50% compression ratio.  This is usually only an inconvenience during your first backup, when all files need to be sent.  Subsequent backups only send files that have changed since the last backup (a so called incremental backup), and if performed regularly, the number of files that are sent is usually small.
+
+<p><hr>
+<a name="22"><b>What kind of compression ratios can I expect?</b></a>
+
+<p>
+FileBunker uses gzip, which achieves varying compression ratios depending on the files being compressed.  For instance plain text files will compress much better than mp3 files.  The author has experienced ratios of 50% over a home directory which had a combination of many different types of files. 
+
+<p><hr>
+<a name="11"><b>Why isn't FileBunker backing up the files in my selection?</b></a>
+
+<p>
+Most likely the files were backed up previously and have not changed.  FileBunker only performs so called "incremental" backups, meaning only files that have changed since the last backup are considered in need of a backup.
+
+<p><hr>
+<a name="12"><b>I just backed up a file and I can't restore it.  What gives?</b></a>
+
+<p>
+Files can sometimes take a few minutes or even a few hours to arrive in your GMail account after being sent during a backup.  The author has seen files take as long as 12 hours to arrive, so be patient.
+
+<p><hr>
+<a name="13"><b>Can I run FileBunker automatically as an NT Service?</b></a>
+
+<p>
+Currently there is no built in support for performing automated backups as an NT service.  With some work you can get the effect by creating your own NT service that invokes the command line version of FileBunker (see <a href="#16">Is there a command line version of FileBunker?</a>).
+
+<p><hr>
+<a name="14"><b>What happens if GMail changes in a way that 'breaks' FileBunker?  Can I still get my files?</b></a>
+
+<p>
+Yes, although it is currently inconvenient.  Currently this involves running the command line version of FileBunker (see <a href="#16">Is there a command line version of FileBunker?</a>).  If you need to decrypt a file manually, first find the globally unique identifier (guid) for that file.  This can be found by dumping the database of files stored in your backup repository using the <tt>dumpDatabase</tt> operation of the command line FileBunker.  Visual inspection of the output of the dump should allow you to track down the guid (e.g. AAAA/ulSTECt9YxEAAAAAQ).  You can now manually log into your GMail account and search for that file.  Download the attachment and save it locally.  Note if the file is larger than 10Mb, then you will need to download each part and concatenate them together yourself using a command line utility like <tt>cat</tt>.  Now you can run the command line FileBunker with the <tt>decrypt</tt> operation to recover the file.  See the command line FileBunker usage for more information on the <tt>dumpDatabase</tt> and <tt>decrypt</tt> operations.
+
+<p><hr>
+<a name="15"><b>Can I retrieve my files from other computers?</b></a>
+
+<p>
+You can only do this in a manual way as described in the FAQ <a href="#14">What happens if GMail changes in a way that 'breaks' FileBunker?  Can I still get my files?</a>.  In a future version of FileBunker you will be able to install FileBunker on a new machine, configure it to point at your existing GMail accounts, and it will automatically reconstruct its understanding of what it has backed up to those accounts, allowing you to recover files immediately.
+
+<p><hr>
+<a name="24"><b>How will my ISP feel about me emailing thousands of files to my GMail account as part of a major backup?</b></a>
+
+<p>
+In some cases, your ISP may refuse outgoing messages (by literally blocking access to their SMTP server) if it has detected that you are sending inhuman volumes of mail.  This is a side effect of their admirable attempt to stop spam.  The author had this experience with Earthlink, but remedied it by using their authenticated SMTP server, which does not have such restrictions.  In this situation, a long backup went for about 20 minutes (~ 1000 files), and then failed with an error (handled gracefully in FileBunker with an error dialog).  For about the next hour, all outgoing mail (whether from FileBunker or from an Email client) was broken.  If you find yourself in this situation, contact your ISP to explore remedies such as authenticated SMTP.
+
+<p><hr>
+<a name="16"><b>Is there a command line version of FileBunker?</b></a>
+
+<p>
+Yes there is.  You can run the java class com.toubassi.filebunker.commandline.FileBunker with the "-usage" argument to get more information on its functionality.  Make sure to specify all Jar files in the FileBunker/Resources/lib directory on your classpath, and make sure to run with Java 1.4.2_05 or later.
+
+<p><hr>
+<a name="17"><b>Why does FileBunker once in awhile ask me to type in strange characters from an image?</b></a>
+
+<p>
+Google has introduced an additional authentication procedure which is presented to users infrequently.  This procedure requires the user to look at an image with warped characters in it, and type in what they see.  When FileBunker needs to login to your GMail account, if this process is needed, you will be presented with the image and asked to type in the characters in it.  Again, this should be an infrequent event.
+
+<p><hr>
+<a name="23"><b>Why can't I see D:\?</b></a>
+
+<p>
+On Windows, by default only C:\ is shown in the backup explorer.  You must manually tell FileBunker to show other drives by going to the File->Configuration, and selecting the appropriate checkboxes in the "Show Drives" field.  This is a workaround for a problem in Java where drives that are not present trigger an "Abort/Retry/Ignore" dialog.  The author welcomes input on how to workaround this problem.
+
+<p><hr>
+<a name="18"><b>What is Java and where do I get it?</b></a>
+
+<p>
+Java is a cross platform software technology from Sun microsystems that is available for free.  FileBunker specifically requires version 1.4.2_05 or later.  Visit <a href="http://java.sun.com/j2se/1.4.2/download.html">http://java.sun.com/j2se/1.4.2/download.html</a> and download the "J2SE v 1.4.2_05 JRE" (Java 2 Standard Edition version 1.4.2_05 Java Runtime Environment) or later.  If this link doesn't work, visit <a href="http://java.sun.com/downloads/index.html">http://java.sun.com/downloads/index.html</a>.
+
+<p><hr>
+<a name="19"><b>How do I run FileBunker on MacOSX?</b></a>
+
+<p>
+FileBunker has not yet been tested on Mac OSX.  Those who are technically inclined and willing to experiment should start with the linux release, and then augment the FileBunker/Resources/lib with appropriate libraries/jars from the Mac OSX version of eclipse (visit http://download.eclipse.org).  You will also need to modify Resources/FileBunker.conf to include those libraries/jars.
+
+<p><hr>
+<a name="20"><b>Can I use FileBunker with a Yahoo! Mail Plus account?</b></a>
+
+<p>
+Not currently, but this is an excellent feature that is high on the development priority list.
+
+<br/>
+<br/>
+<br/>
+<br/>
+
+</body>
+</html>
