@@ -34,9 +34,19 @@ import com.toubassi.filebunker.vault.VaultException;
 import com.toubassi.util.Timer;
 import com.toubassi.util.TimerScheduler;
 
-/**
- * @author garrick
- */
+// NOTE: The locking can be tricky in the Daemon.  On the one hand it is
+// used from a thread to do various things based on timers.  On the other
+// hand it responds to notifications from the vault that are coming from
+// the main thread.  Deadlock can occur between the two.  Specifically
+// if the Daemon holds a lock (say by synchronizing on itself), when calling
+// into the Vault to, say, performMaintenance.  And then say in
+// handleNotification, which is called from the vault why those locks are held
+// we also synchronize on ourselves.  We will deadlock due to a conflict in
+// the order we acquire locks.  The daemon thread take a lock on itself, then
+// tries to acquire the Vault lock by calling performMaintenance.  Meanwhile
+// another thread already has the Vault lock but calls handleNotification
+// which tries to acquire the daemon's lock.
+//
 public class Daemon implements Runnable, NotificationListener
 {
     /**
@@ -65,7 +75,6 @@ public class Daemon implements Runnable, NotificationListener
     private Vault vault;
     private AvailableBytesStatusItem availableBytesStatusItem;
 
-    private boolean availableBytesNeedsRefresh;
     private TimerScheduler scheduler;
     private Timer updateAvailableBytesTimer;
     private Timer frequentMaintenanceTimer;
@@ -86,7 +95,7 @@ public class Daemon implements Runnable, NotificationListener
         thread.start();
     }
 
-    private synchronized void performMaintenance()
+    private void performMaintenance()
     {
         if (!vault.isConfigured()) {
             return;
@@ -101,7 +110,7 @@ public class Daemon implements Runnable, NotificationListener
         }
     }
 
-    private synchronized void updateAvailableBytesIfNecessary()
+    private void updateAvailableBytes()
     {
         if (!vault.isConfigured()) {
             availableBytesStatusItem.clearAvailableBytes();
@@ -109,12 +118,8 @@ public class Daemon implements Runnable, NotificationListener
         }
         
         try {
-            if (availableBytesNeedsRefresh) {
-                availableBytesNeedsRefresh = false;
-
-		        long availableBytes = vault.availableBytes();
-		        availableBytesStatusItem.updateAvailableBytes(availableBytes);
-            }
+	        long availableBytes = vault.availableBytes();
+	        availableBytesStatusItem.updateAvailableBytes(availableBytes);
         }
         catch (VaultException e) {
             errorCount++;
@@ -122,50 +127,48 @@ public class Daemon implements Runnable, NotificationListener
         }
     }
 
-    public synchronized void run()
+    public void run()
     {
         scheduler.start(new Timer(DefaultMaintenanceMillis, 0, new PerformMaintenanceRunnable()));
 
-        availableBytesNeedsRefresh = true;
         updateAvailableBytesTimer = new Timer(InitialUpdateAvailableBytesMillis, 1, new UpdateAvailableBytesRunnable());
         scheduler.start(updateAvailableBytesTimer);
                 
         int errorCount = 0;
         
         while (scheduler.millisUntilNextExpiration() >= 0 && errorCount < 10) {
-                
-            scheduler.waitUntilNextExpiration(this);
+
+            scheduler.waitUntilNextExpiration();
             
+            // Mustn't hold locks when going in here that we may need to
+            // acquire in handleNotification.  See comment at top.
             scheduler.runExpiredTimers();
         }
         
         Log.log("Daemon thread aborting after too many errors (" + errorCount + ")");
     }
     
-    public synchronized void handleNotification(String notification, Object sender, Object argument)
+    // handleNotification must not allocate any locks that are held by the
+    // daemon thread when calling into the vault.  See comment on top.
+    public void handleNotification(String notification, Object sender, Object argument)
     {
         if (Vault.AvailableBytesChangedNotification.equals(notification)) {
-            availableBytesNeedsRefresh = true;
 
-            // If there we don't have an active timer for this, then start one.
+            // If we don't have an active timer for this, then start one.
             if (updateAvailableBytesTimer == null || !scheduler.isActive(updateAvailableBytesTimer)) {
                 updateAvailableBytesTimer = new Timer(UpdateAvailableBytesMillis, 1, new UpdateAvailableBytesRunnable());
                 scheduler.start(updateAvailableBytesTimer);            
-
-                // We need to notify the daemon thread because it may be waiting a
-                // long time based on its last guess as to when it would expire.
-                notifyAll();
             }
         }
         else if (Vault.MaintenanceNeededNotification.equals(notification)) {
+
             if (frequentMaintenanceTimer != null) {
-                scheduler.cancel(frequentMaintenanceTimer);
+                frequentMaintenanceTimer.setRepeatCount(20);
             }
-            frequentMaintenanceTimer = new Timer(FrequentMaintenanceMillis, 20, new PerformMaintenanceRunnable());
-            scheduler.start(frequentMaintenanceTimer);
-            // We need to notify the daemon thread because it may be waiting a
-            // long time based on its last guess as to when it would expire.
-            notifyAll();
+            if (frequentMaintenanceTimer == null || !scheduler.isActive(frequentMaintenanceTimer)) {
+                frequentMaintenanceTimer = new Timer(FrequentMaintenanceMillis, 20, new PerformMaintenanceRunnable());                
+                scheduler.start(frequentMaintenanceTimer);
+            }            
         }
     }
     
@@ -182,7 +185,7 @@ public class Daemon implements Runnable, NotificationListener
     {    
         public void run()
         {
-            updateAvailableBytesIfNecessary();
+            updateAvailableBytes();
         }
     }
 }

@@ -51,6 +51,11 @@ public class TimerScheduler
         if (timer.start()) {
             timers.add(timer);
         }
+        
+        // If a thread is in waitUntilNextExpiration we need
+        // to tickle it so it doesn't sleep past this new
+        // timer's expiration.
+        notifyAll();
     }
     
     public synchronized void cancel(Timer timer)
@@ -67,35 +72,45 @@ public class TimerScheduler
         return timers.contains(timer);
     }
     
-    public synchronized void runExpiredTimers()
+    public void runExpiredTimers()
     {
-        if (timers.isEmpty()) {
-            return;
-        }
-        
-        while (timers.size() > 0) {
-            Timer timer = (Timer)timers.first();
+        // This loop is a little obfuscated due to our desire to NOT
+        // hold the scheduler lock when calling out to client code
+        // (Timer's runnable).  This is to avoid potential deadlocks.
+        while (true) {
+            Timer timer = null;
             
-            if (!timer.runIfExpired()) {
-                break;
-            }
-            timers.remove(timer);
-            if (timer.start()) {
-                timers.add(timer);
+            synchronized (this) {
+                if (timers.isEmpty()) {
+                    break;
+                }
+                
+                timer = (Timer)timers.first();
+                if (!timer.isExpired()) {
+                    // Since the collection is sorted, once we hit
+                    // the first unexpired timer, we are done.
+                    break;
+                }
             }
             
-            /*
-            Iterator i = timers.iterator();
-            System.out.println("===========");
-            long base = System.currentTimeMillis();
-            while (i.hasNext()) {
-                NewTimer t = (NewTimer)i.next();
-            }
-            */
+            // It is critically important that we don't foolishly hold onto the
+            // TimerScheduler lock while calling out to timer runnable's.  We don't
+            // know what kind of locks that code will try to acquire, and it may
+            // innocently cause deadlock.
+            timer.run();
             
+            synchronized (this) {
+                
+                // Must remove and re-add to get the timer resorted.
+                timers.remove(timer);
+
+                if (timer.start()) {
+                    timers.add(timer);
+                }                
+            }            
         }
     }
-    
+
     public synchronized long millisUntilNextExpiration()
     {
         if (timers.isEmpty()) {
@@ -111,40 +126,17 @@ public class TimerScheduler
         return 0;
     }
     
-    public void waitUntilNextExpiration(Object waitOn)
+    public synchronized void waitUntilNextExpiration()
     {
         long millis = millisUntilNextExpiration();
         
         if (millis > 0) {
             try {
-                waitOn.wait(millis);
+                wait(millis);
             }
             catch (InterruptedException e) {
             }
         }        
-    }
-
-    /**
-     * Simple test
-     */
-    public synchronized static void main(String args[])
-    {
-        TimerScheduler scheduler = new TimerScheduler();
-        Timer timer1 = new Timer(1000, 5, new Runnable() { public void run() { System.out.println("1 second"); } });
-        Timer timer2 = new Timer(200, 10, new Runnable() { public void run() { System.out.println(".2 seconds"); } });
-        
-        scheduler.start(timer1);
-        scheduler.start(timer2);
-        
-        int count = 0;
-        while (scheduler.millisUntilNextExpiration() >= 0) {
-            
-            scheduler.waitUntilNextExpiration(TimerScheduler.class);
-            
-            scheduler.runExpiredTimers();
-        }
-        
-        System.out.println("done");
     }
 }
 

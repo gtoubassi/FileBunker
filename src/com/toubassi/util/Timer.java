@@ -44,6 +44,14 @@ public class Timer
     {
         this.runnable = runnable;
         this.millis = millis;
+        setRepeatCount(repeatCount);
+    }
+    
+    /**
+     * repeatCount of 0 means run indefinately.
+     */
+    public void setRepeatCount (int repeatCount)
+    {
         // Internally repeatCount 0 means this thing is done firing forever.
         // -1 means run forever.
         if (repeatCount == 0) {
@@ -64,17 +72,18 @@ public class Timer
         return true;
     }
     
-    public boolean runIfExpired()
+    public boolean isExpired()
     {
-        if (System.currentTimeMillis() >= expirationTime) {
-            runnable.run();            
-            return true;
-        }
-        return false;
+        return System.currentTimeMillis() >= expirationTime;
     }
     
     public long expirationTime()
     {
         return expirationTime;
+    }
+    
+    public void run()
+    {
+        runnable.run();
     }
 }
