@@ -15,7 +15,7 @@ ClassPath %INSTALLDIR%/Resources/lib/httpunit-1.5.4x.jar
 ClassPath %INSTALLDIR%/Resources/lib/activation.jar
 ClassPath %INSTALLDIR%/Resources/lib/js.jar
 ClassPath %INSTALLDIR%/Resources/lib/nekohtml.jar
-ClassPath %INSTALLDIR%/Resources/lib/mail.jar
+ClassPath %INSTALLDIR%/Resources/lib/mailapi.jar
 ClassPath %INSTALLDIR%/Resources/lib/smtp.jar
 ClassPath %INSTALLDIR%/Resources/lib/subx-common-0.85.jar
 ClassPath %INSTALLDIR%/Resources/lib/xercesImpl.jar
