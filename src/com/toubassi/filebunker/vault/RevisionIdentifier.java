@@ -27,27 +27,35 @@ THE SOFTWARE.
  */
 package com.toubassi.filebunker.vault;
 
+import com.toubassi.archive.Archivable;
+import com.toubassi.archive.ArchiveInputStream;
+import com.toubassi.archive.ArchiveOutputStream;
 import com.toubassi.io.XMLDeserializer;
 import com.toubassi.io.XMLSerializable;
 import com.toubassi.io.XMLSerializer;
-import com.toubassi.util.GUIDGenerator;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 
 /**
  * @author garrick
  */
-public class RevisionIdentifier implements XMLSerializable, Serializable
+public class RevisionIdentifier implements XMLSerializable, Serializable, Archivable
 {
-    private String guid;
+    private GUID legacyGUID;
+    
+    private FileDigest digest;
     private String handlerName;
+    private long size;
+    private long backedupSize;
+    private transient int refCount;
     
     public static final String guidCharacterClass()
     {
-        return GUIDGenerator.guidCharacterClass();
+        return FileDigest.digestStringCharacterClass();
     }
     
     public RevisionIdentifier()
@@ -55,12 +63,61 @@ public class RevisionIdentifier implements XMLSerializable, Serializable
         // Only for deserialization
     }
     
-    public RevisionIdentifier(String handlerName)
+    public RevisionIdentifier(FileDigest digest, long size)
     {
-        guid = GUIDGenerator.sharedInstance().nextGUID();
-        this.handlerName = handlerName;
+        this.digest = digest;
+        this.size = size;
+        this.backedupSize = size;
     }
     
+    public RevisionIdentifier(String handlerName, File file) throws IOException
+    {
+        this(handlerName, file, 0);
+    }
+    
+    public RevisionIdentifier(String handlerName, File file, long backedupSize) throws IOException
+    {
+        this.handlerName = handlerName;
+        this.digest = new FileDigest(file);
+        size = file.length();
+        this.backedupSize = backedupSize;
+    }
+    
+    public RevisionIdentifier(String handlerName, FileDigest digest, long size, long backedupSize) throws IOException
+    {
+        this.handlerName = handlerName;
+        this.digest = digest;
+        this.size = size;
+        this.backedupSize = backedupSize;
+    }
+    
+    public void addReference()
+    {
+        refCount++;
+    }
+    
+    public void removeReference()
+    {
+        if (refCount <= 0) {
+            throw new IllegalStateException("Attempt to remove reference when count == " + refCount);
+        }
+        refCount--;
+    }
+    
+    public int referenceCount()
+    {
+        return refCount;
+    }
+    
+    public boolean hasReferences()
+    {
+        return refCount > 0;
+    }
+    
+    public void setHandlerName(String name)
+    {
+        handlerName = name;
+    }
     public String handlerName()
     {
         return handlerName;
@@ -68,42 +125,106 @@ public class RevisionIdentifier implements XMLSerializable, Serializable
     
     public String guid()
     {
-        return guid;
+        if (legacyGUID != null) {
+            return legacyGUID.guidString();
+        }
+        return digest.digestString();
     }
     
+    /**
+     * May return null.
+     */
+    public FileDigest digest()
+    {
+        return digest;
+    }
+    
+    public synchronized void setSize(long size)
+    {
+        this.size = size;
+    }
+
+    public long size()
+    {
+        return size;
+    }
+
+    public synchronized void setBackedupSize(long size)
+    {
+        backedupSize = size;
+    }
+
+    public long backedupSize()
+    {
+        return backedupSize;
+    }
+
+    public long effectiveBackedupSize()
+    {        
+        return refCount == 0 ? backedupSize : (backedupSize / refCount);
+    }
+
     public String toString()
     {
-        return guid + ":" + handlerName;
+        return guid() + ":" + handlerName;
     }
 
 	public void serializeXML(XMLSerializer writer)
 	{
 	    writer.push("identifier");
-		writer.write("guid", guid);
+	    if (legacyGUID != null) {
+	        writer.write("legacyGuid", legacyGUID.guidString());
+	    }
+	    else {
+	        writer.write("guid", digest.digestString());
+	    }
 		writer.write("handler", handlerName);
 	    writer.pop();
 	}
 
     public XMLSerializable deserializeXML(XMLDeserializer deserializer, String container, String value)
     {
-        if ("guid".equals(container)) {
-            guid = value;
-        }
-        else if ("handler".equals(container)) {
-            handlerName = value;
-        }
-        return null;
+        throw new RuntimeException("Can't read xml");
     }
 
     public void writeData(DataOutputStream out) throws IOException
     {
-        out.writeUTF(guid);
-        out.writeUTF(handlerName);
+        throw new RuntimeException("Can't write legacy datastream");
     }
     
     public void readData(DataInputStream in) throws IOException
     {
-        guid = in.readUTF();
+        legacyGUID = new GUID(in.readUTF());
         handlerName = in.readUTF();
     }
+
+    public void archive(ArchiveOutputStream output) throws IOException
+    {
+        output.writeClassVersion("com.toubassi.filebunker.vault.RevisionIdentifier", 1);
+        output.writeBoolean(legacyGUID == null);
+        if (legacyGUID != null) {
+            output.writeObject(legacyGUID, Archivable.StrictlyTypedValue);
+        }
+        else {
+            output.writeObject(digest, Archivable.StrictlyTypedValue);            
+        }
+        output.writeUniqueString(handlerName);
+        output.writeCompactLong(size);
+        output.writeCompactLong(backedupSize);
+    }
+
+    public void unarchive(ArchiveInputStream input) throws IOException
+    {
+        input.readClassVersion("com.toubassi.filebunker.vault.RevisionIdentifier");
+        boolean hasDigest = input.readBoolean();
+        if (hasDigest) {
+            digest = (FileDigest)input.readObject(Archivable.StrictlyTypedValue, FileDigest.class);
+        }
+        else {
+            legacyGUID = (GUID)input.readObject(Archivable.StrictlyTypedValue, GUID.class);
+        }
+        handlerName = input.readUniqueString();
+        size = input.readCompactLong();
+        backedupSize = input.readCompactLong();
+    }    
 }

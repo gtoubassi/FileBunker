@@ -27,6 +27,9 @@ THE SOFTWARE.
  */
 package com.toubassi.filebunker.vault;
 
+import com.toubassi.archive.Archivable;
+import com.toubassi.archive.ArchiveInputStream;
+import com.toubassi.archive.ArchiveOutputStream;
 import com.toubassi.io.XMLDeserializer;
 import com.toubassi.io.XMLSerializable;
 import com.toubassi.io.XMLSerializer;
@@ -35,14 +38,15 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
-import java.text.ParsePosition;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * @author garrick
  */
-public class Revision implements XMLSerializable, Serializable
+public class Revision implements XMLSerializable, Serializable, Archivable
 {
     protected Node node;
     private Date date;
@@ -98,22 +102,38 @@ public class Revision implements XMLSerializable, Serializable
 
     public XMLSerializable deserializeXML(XMLDeserializer deserializer, String container, String value)
     {
-        if ("date".equals(container)) {
-    	    synchronized (dateFormat) {
-    			Date date = (Date)dateFormat.parseObject(value, new ParsePosition(0));
-    			setDate(date);            
-    	    }
-        }
-        return null;
+        throw new RuntimeException("Can't read xml");
     }
 
     public void writeData(DataOutputStream out) throws IOException
     {
-        out.writeLong(date.getTime());
+        throw new RuntimeException("Can't write legacy datastream");
     }
+    
+    // This is used to uniqe dates that we read from old archives.
+    // Since the readData code path is obsolete we don't need to
+    // worry about cleaning up this Map.
+    private static Map uniqueDates = new TreeMap();
     
     public void readData(DataInputStream in) throws IOException
     {
-        date = new Date(in.readLong());
+        Date tempDate = new Date(in.readLong());
+        date = (Date)uniqueDates.get(tempDate);
+        if (date == null) {
+            date = tempDate;
+            uniqueDates.put(date, date);
+        }
+    }
+
+    public void archive(ArchiveOutputStream output) throws IOException
+    {
+        output.writeClassVersion("com.toubassi.filebunker.vault.Revision", 1);
+        output.writeObject(date, Archivable.StrictlyTypedReference);
+    }
+    
+    public void unarchive(ArchiveInputStream input) throws IOException
+    {
+        input.readClassVersion("com.toubassi.filebunker.vault.Revision");
+        date = (Date)input.readObject(Archivable.StrictlyTypedReference, Date.class);
     }
 }

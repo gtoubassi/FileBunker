@@ -27,6 +27,9 @@ THE SOFTWARE.
  */
 package com.toubassi.filebunker.vault;
 
+import com.toubassi.archive.Archivable;
+import com.toubassi.archive.ArchiveInputStream;
+import com.toubassi.archive.ArchiveOutputStream;
 import com.toubassi.io.XMLDeserializer;
 import com.toubassi.io.XMLSerializable;
 import com.toubassi.io.XMLSerializer;
@@ -41,16 +44,25 @@ import java.io.IOException;
 public class FileRevision extends Revision
 {
     private RevisionIdentifier identifier;
-    private long size;
-    private long backedupSize;
-
+    
     public FileRevision()
     {
     }
 
+    public void revisionWasRemoved()
+    {
+        if (identifier != null) {
+            identifier.removeReference();
+        }
+    }
+    
     public void setIdentifier(RevisionIdentifier identifier)
     {
+        if (this.identifier != null) {
+            this.identifier.removeReference();
+        }
         this.identifier = identifier;
+        identifier.addReference();
     }
 
     public RevisionIdentifier identifier()
@@ -58,30 +70,19 @@ public class FileRevision extends Revision
         return identifier;
     }
     
-    public void setSize(long size)
-    {
-        this.size = size;
-        if (node != null) {
-            node.invalidateSizes();
-        }
-    }
-
     public long size()
     {
-        return size;
+        return identifier != null ? identifier.size() : 0;
     }
 
-    public synchronized void setBackedupSize(long size)
+    public long effectiveBackedupSize()
     {
-        backedupSize = size;
-        if (node != null) {
-            node.invalidateSizes();
-        }
+        return identifier != null ? identifier.effectiveBackedupSize() : 0;
     }
-
+    
     public long backedupSize()
     {
-        return backedupSize;
+        return identifier != null ? identifier.backedupSize() : 0;
     }
     
     /**
@@ -90,6 +91,9 @@ public class FileRevision extends Revision
      */
     public float backedupSizeRatio()
     {
+        long backedupSize = backedupSize();
+        long size = size();
+        
         if (backedupSize == 0 || size == 0) {
             return 1;
         }
@@ -102,45 +106,42 @@ public class FileRevision extends Revision
 	    super.serializeXML(writer);
 	    
 	    identifier.serializeXML(writer);
-		writer.write("size", Long.toString(size));
-		writer.write("backedupSize", Long.toString(backedupSize));
 	    writer.pop();
 	}
 
     public XMLSerializable deserializeXML(XMLDeserializer deserializer, String container, String value)
     {
-        if ("identifier".equals(container)) {
-            setIdentifier(new RevisionIdentifier());
-            return identifier;
-        }
-        else if ("size".equals(container)) {
-            setSize(Long.parseLong(value));
-        }
-        else if ("backedupSize".equals(container)) {
-            setBackedupSize(Long.parseLong(value));
-        }
-        else {
-            super.deserializeXML(deserializer, container, value);            
-        }
-        return null;
+        throw new RuntimeException("Cannot read xml");
     }
 
     public void writeData(DataOutputStream out) throws IOException
     {
-        super.writeData(out);
-        out.writeLong(size);
-        out.writeLong(backedupSize);
-        identifier.writeData(out);
+        throw new IOException("Cannot write old datastream");
     }
     
     public void readData(DataInputStream in) throws IOException
     {
+        // reading the old format.
         super.readData(in);
-        size = in.readLong();
-        backedupSize = in.readLong();
         RevisionIdentifier identifier = new RevisionIdentifier();
+        identifier.setSize(in.readLong());
+        identifier.setBackedupSize(in.readLong());
         identifier.readData(in);
         setIdentifier(identifier);
+    }
+
+    public void archive(ArchiveOutputStream output) throws IOException
+    {
+        super.archive(output);
+        output.writeClassVersion("com.toubassi.filebunker.vault.FileRevision", 1);
+        output.writeObject(identifier, Archivable.StrictlyTypedReference);
+    }
+    
+    public void unarchive(ArchiveInputStream input) throws IOException
+    {
+        super.unarchive(input);
+        input.readClassVersion("com.toubassi.filebunker.vault.FileRevision");
+        setIdentifier((RevisionIdentifier)input.readObject(Archivable.StrictlyTypedReference, RevisionIdentifier.class));
     }
 }
 

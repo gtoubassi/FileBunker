@@ -250,7 +250,7 @@ public class BackupController implements NotificationListener, XMLSerializable
 
             String message;
             if (result.numberOfFiles() == 0) {
-                message = "No files were backed up because none had been modified since the last backup.";
+                message = "No files are in need of backup.";
             }
             else {
                 message = formatBackupResultMessage(result, performBackup.estimate(), false);

@@ -459,6 +459,12 @@ public class Explorer extends Composite
             treeViewer.refresh();
             tableViewer.refresh();
 
+            if (isChecked) {
+                checkStateListener.updateTableCheckboxes();
+                checkStateListener.updateTreeCheckboxes();            
+            }
+            
+            
             ignoreSelectionChanges = false;            
             if (lastSelectedViewer != null) {
 	            SelectionChangedEvent event = new SelectionChangedEvent(lastSelectedViewer, lastSelectedViewer.getSelection());

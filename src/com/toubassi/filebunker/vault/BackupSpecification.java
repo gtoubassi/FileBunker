@@ -154,13 +154,18 @@ public class BackupSpecification implements XMLSerializable
             changed();
         }
     }
-    
+
     public void find(BackupDatabase backupdb, FileFindDelegate delegate) throws OperationCanceledVaultException
+    {
+        find(backupdb, delegate, null);
+    }
+    
+    public void find(BackupDatabase backupdb, FileFindDelegate delegate, FileOperationListener listener) throws OperationCanceledVaultException
     {
         FileFind find = new FileFind();
         
         find.setIgnoreHiddenFiles(true);
-        find.setDelegate(new BackupSpecificationFileFindDelegate(this, backupdb, delegate));
+        find.setDelegate(new BackupSpecificationFileFindDelegate(this, backupdb, delegate, listener));
         
         for (int i = 0, count = includedFiles.size(); i < count; i++) {
             File file = (File)includedFiles.get(i);
@@ -323,20 +328,29 @@ public class BackupSpecification implements XMLSerializable
 
 class BackupSpecificationFileFindDelegate implements FileFindDelegate
 {
-    BackupSpecification spec;
-    BackupDatabase backupdb;
-    FileFindDelegate delegate;
+    private BackupSpecification spec;
+    private BackupDatabase backupdb;
+    private FileFindDelegate delegate;
+    private FileOperationListener listener;
     
-    public BackupSpecificationFileFindDelegate(BackupSpecification spec, BackupDatabase backupdb, FileFindDelegate delegate)
+    public BackupSpecificationFileFindDelegate(BackupSpecification spec,
+            BackupDatabase backupdb, FileFindDelegate delegate,
+            FileOperationListener listener)
     {
         this.backupdb = backupdb;
         this.spec = spec;
         this.delegate = delegate;
+        this.listener = listener;
     }
     
     public boolean processFile(File file)
     {
         if (spec.containsFile(file)) {
+            
+            if (listener != null && !listener.willProcessFile(file)) {
+                return false;
+            }
+            
             if (!spec.isIncremental() || backupdb.needsBackup(file)) {
                 return delegate.processFile(file);                
             }

@@ -252,12 +252,13 @@ public class CoordinatingFileStore implements FileStore, NotificationListener
         return storeThatCanBackupFile(file) != null;
     }
 
-    public RevisionIdentifier backupFile(File file, String name, long[] sizeOut, FileOperationListener listener) throws VaultException
+	public void backupFile(File file, String name, RevisionIdentifier identifier, FileOperationListener listener) throws VaultException
     {
         FileStore store = storeThatCanBackupFile(file);
         
         if (store != null) {
-            return store.backupFile(file, name, sizeOut, listener);
+            store.backupFile(file, name, identifier, listener);
+            return;
         }
 
         throw new OutOfSpaceException(file);

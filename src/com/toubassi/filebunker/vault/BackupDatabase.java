@@ -28,6 +28,9 @@ THE SOFTWARE.
 package com.toubassi.filebunker.vault;
 
 import com.subx.common.NotificationCenter;
+import com.toubassi.archive.Archivable;
+import com.toubassi.archive.ArchiveInputStream;
+import com.toubassi.archive.ArchiveOutputStream;
 import com.toubassi.io.XMLDeserializer;
 import com.toubassi.io.XMLSerializable;
 import com.toubassi.io.XMLSerializer;
@@ -46,6 +49,7 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.SortedSet;
@@ -69,41 +73,85 @@ import java.util.TreeSet;
  * 
  * @author garrick
  */
-public class BackupDatabase implements XMLSerializable, Serializable
+public class BackupDatabase implements XMLSerializable, Serializable, Archivable
 {
     public static final String ContentsChangedNotification = "ContentsChangedNotification";
     
     private Node root;
     private File file;
-    private boolean autosave;
+    private transient HashMap fileRevisionDigests = new HashMap();
     private transient int changesSinceLastSaveCounter;
 
-    public BackupDatabase()
+    public BackupDatabase() throws IOException
+    {
+        this(null);
+    }
+    
+    public BackupDatabase(File configDirectory) throws IOException
     {
         clear();
-    }
+        
+        if (configDirectory != null) {
+            file = new File(configDirectory, "database2");
+            
+            if (file.exists()) {
+                long startMillis = 0, endMillis = 0;                
+                long startMem = 0, endMem = 0;
+                Runtime runtime = Runtime.getRuntime();
+                boolean profile = false;
+                
+                if (profile) {
+                    runtime.gc();
+                    runtime.gc();
+                    startMem = runtime.totalMemory() - runtime.freeMemory();                    
+                    startMillis = System.currentTimeMillis();                    
+                }
 
-    public void setAutosaveEnabled(boolean flag)
-    {
-        autosave = flag;
-    }
+                load();
+                
+                if (profile) {
+	                endMillis = System.currentTimeMillis();
+	                runtime.gc();
+	                runtime.gc();
+	                endMem = runtime.totalMemory() - runtime.freeMemory();
+	                
+	                System.out.println(root.totalFileRevisions() + " revisions");
+	                System.out.println((endMillis - startMillis) + " ms");
+	                System.out.println((endMem - startMem) + " b");
+                }                
+            }
+            else {
+                File legacyFile = new File(configDirectory, "database");
+                
+                if (legacyFile.exists()) {
+                    FileInputStream fileInput = new FileInputStream(legacyFile);
+                    BufferedInputStream bufferedInput = new BufferedInputStream(fileInput);
+                    
+                    try {
+                        loadLegacy(bufferedInput);
+                    }
+                    finally {
+                        bufferedInput.close();
+                    }
+                    
+                    save();
+                    legacyFile.delete();
 
-    public boolean autosaveEnabled()
-    {
-        return autosave;
+                    /*
+                    saveXML(new BufferedOutputStream(new FileOutputStream(new File(configDirectory, "legacy.xml"))));
+                    load();
+                    save();
+                    load();
+                    saveXML(new BufferedOutputStream(new FileOutputStream(new File(configDirectory, "new.xml"))));
+                    */
+                }
+            }
+        }
     }
 
     private void clear()
     {
         root = new Node(null);
-    }
-
-    public void setFile(File file) throws IOException
-    {
-        this.file = file.getCanonicalFile();
-        if (file.exists()) {
-            load();
-        }
     }
 
     public File file()
@@ -157,6 +205,24 @@ public class BackupDatabase implements XMLSerializable, Serializable
         if (lastModified + 1000 < lastBackup.getTime()) {
             return false;
         }
+        
+        FileRevision latestFileRevision = (FileRevision)latest;
+        
+        if (file.length() != latestFileRevision.size()) {
+            return true;
+        }
+        
+        FileDigest latestDigest = latestFileRevision.identifier().digest();
+        if (latestDigest != null) {
+            try {
+                FileDigest digest = new FileDigest(file);
+                if (digest.equals(latestDigest)) {
+                    return false;
+                }                
+            }
+            catch (IOException e) {                
+            }
+        }
 
         return true;
     }
@@ -206,8 +272,40 @@ public class BackupDatabase implements XMLSerializable, Serializable
         return null;
     }
 
+    public FileRevision fileRevisionWithDigest(FileDigest digest)
+    {
+        return (FileRevision)fileRevisionDigests.get(digest);
+    }
+    
+    private synchronized void addFileRevisionDigest(FileRevision revision)
+    {
+        FileDigest digest = revision.identifier().digest();
+        if (digest != null) {
+            fileRevisionDigests.put(digest, revision);
+        }        
+    }
+
+    private synchronized void indexFileRevisionDigests(Node node)
+    {
+        List revisions = node.revisions();
+        for (int i = 0, count = revisions.size(); i < count; i++) {
+            Revision revision = (Revision)revisions.get(i);
+            
+            if (!revision.isDirectory()) {
+                addFileRevisionDigest((FileRevision)revision);
+            }
+        }
+        
+        List children = node.children();
+        for (int i = 0, count = children.size(); i < count; i++) {
+            Node child = (Node)children.get(i);
+            
+            indexFileRevisionDigests(child);
+        }
+    }
+
     private synchronized void recordRevision(String absolutePath,
-            Revision revision) throws IOException
+            FileRevision revision) throws IOException
     {
         StringTokenizer tokenizer = new StringTokenizer(absolutePath,
                 File.separator);
@@ -255,17 +353,16 @@ public class BackupDatabase implements XMLSerializable, Serializable
         }
 
         node.addRevision(revision);
+        addFileRevisionDigest(revision);
 
         databaseChanged();
     }
 
     public synchronized FileRevision recordRevision(File file, Date date,
-            RevisionIdentifier identifier, long size) throws IOException
+            RevisionIdentifier identifier) throws IOException
     {
         FileRevision revision = new FileRevision();
         revision.setIdentifier(identifier);
-        revision.setSize(file.length());
-        revision.setBackedupSize(size);
         revision.setDate(date);
 
         recordRevision(file.getAbsolutePath(), revision);
@@ -320,11 +417,18 @@ public class BackupDatabase implements XMLSerializable, Serializable
         }
     }
 
-    public synchronized void removeRevision(FileRevision revision)
-            throws IOException
+    public synchronized boolean removeRevision(FileRevision revision)
     {
+        RevisionIdentifier identifier = revision.identifier();
         revision.node().removeRevision(revision);
         databaseChanged();
+        if (identifier.hasReferences()) {
+            return false;
+        }
+        if (identifier.digest() != null) {
+            fileRevisionDigests.remove(identifier.digest());
+        }
+        return true;
     }
     
     public synchronized FileRevision findRevisionWithHandlerName(String name)
@@ -360,14 +464,9 @@ public class BackupDatabase implements XMLSerializable, Serializable
         return ratio[0] / numberOfRevisions[0];
     }
 
-    private synchronized void databaseChanged() throws IOException
+    private synchronized void databaseChanged()
     {
         changesSinceLastSaveCounter++;
-        if (autosave) {
-            if ((changesSinceLastSaveCounter + 1) % 20 == 0) {
-                save();
-            }
-        }
         NotificationCenter.sharedCenter().post(ContentsChangedNotification, this, null);
     }
 
@@ -401,8 +500,17 @@ public class BackupDatabase implements XMLSerializable, Serializable
 
     public synchronized void save(OutputStream output) throws IOException
     {
+        ArchiveOutputStream archiveOutput = new ArchiveOutputStream(output);
+
+        archive(archiveOutput);
+        archiveOutput.flush();
+    }
+
+    private synchronized void saveLegacy(OutputStream output) throws IOException
+    {
         DataOutputStream dataOutput = new DataOutputStream(output);
         root.writeData(dataOutput);
+        dataOutput.flush();
     }
 
     public synchronized void saveXML(OutputStream output) throws IOException
@@ -416,24 +524,28 @@ public class BackupDatabase implements XMLSerializable, Serializable
     public synchronized void load() throws IOException
     {
         FileInputStream fileInput = new FileInputStream(file);
+        BufferedInputStream bufferedInput = new BufferedInputStream(fileInput, 4096);
 
         try {
-            load(fileInput);
+            load(bufferedInput);
         } finally {
-            fileInput.close();
+            bufferedInput.close();
         }
     }
 
     public synchronized void load(InputStream input) throws IOException
     {
-        BufferedInputStream bufferedInput = new BufferedInputStream(input, 4096);
+        ArchiveInputStream archiveInput = new ArchiveInputStream(input);
 
+        unarchive(archiveInput);
+    }
+
+    private synchronized void loadLegacy(InputStream input) throws IOException
+    {
         clear();
 
-        DataInputStream dataInput = new DataInputStream(bufferedInput);
+        DataInputStream dataInput = new DataInputStream(input);
         root.readData(dataInput);
-        //XMLDeserializer deserializer = new XMLDeserializer(bufferedInput);
-        //deserializer.parse(this);
     }
 
     public void serializeXML(XMLSerializer serializer)
@@ -450,7 +562,20 @@ public class BackupDatabase implements XMLSerializable, Serializable
     public XMLSerializable deserializeXML(XMLDeserializer deserializer,
             String container, String value)
     {        
-        return root;
+        throw new RuntimeException("Can't read xml");
+    }
+    
+    public void archive(ArchiveOutputStream output) throws IOException
+    {
+        output.writeClassVersion("com.toubassi.filebunker.vault.BackupDatabase", 1);
+        output.writeObject(root, Archivable.StrictlyTypedValue);
+    }
+    
+    public void unarchive(ArchiveInputStream input) throws IOException
+    {
+        input.readClassVersion("com.toubassi.filebunker.vault.BackupDatabase");
+        root = (Node)input.readObject(Archivable.StrictlyTypedValue, Node.class);
+        indexFileRevisionDigests(root);
     }
 }
 

@@ -27,6 +27,14 @@ THE SOFTWARE.
  */
 package com.toubassi.filebunker.vault;
 
+import com.toubassi.archive.Archivable;
+import com.toubassi.archive.ArchiveInputStream;
+import com.toubassi.archive.ArchiveOutputStream;
+import com.toubassi.io.XMLDeserializer;
+import com.toubassi.io.XMLSerializable;
+import com.toubassi.io.XMLSerializer;
+import com.toubassi.util.Platform;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
@@ -39,21 +47,14 @@ import java.util.Date;
 import java.util.List;
 import java.util.SortedSet;
 
-import com.toubassi.io.XMLDeserializer;
-import com.toubassi.io.XMLSerializable;
-import com.toubassi.io.XMLSerializer;
-import com.toubassi.util.Platform;
-
 /**
  * @author garrick
  */
-public class Node implements XMLSerializable, Serializable
+public class Node implements XMLSerializable, Serializable, Archivable
 {
     private Node parent;
     private String name;
     private File file;
-    private transient long nodeBackedupSize;
-    private transient long totalBackedupSize;
     private List revisions;
     private List children;
     
@@ -67,7 +68,6 @@ public class Node implements XMLSerializable, Serializable
         this.name = name;
         revisions = Collections.EMPTY_LIST;
         children = Collections.EMPTY_LIST;
-        invalidateSizes();
     }
 
     public void setParent(Node parent)
@@ -141,15 +141,33 @@ public class Node implements XMLSerializable, Serializable
         return true;        
     }
     
+    public synchronized int totalFileRevisions()
+    {
+        int total = 0;
+        
+        for (int i = 0; i < revisions.size(); i++) {
+            Revision revision = (Revision)revisions.get(i);
+            
+            if (!revision.isDirectory()) {
+                total++;
+            }
+        }
+        
+        for (int i = 0; i < children.size() ; i++) {
+            Node child = (Node)children.get(i);
+            
+            total += child.totalFileRevisions();
+        }        
+        return total;
+    }
+    
     public synchronized long totalBackedupSize()
     {
-        if (totalBackedupSize == -1) {
-	        totalBackedupSize = nodeBackedupSize();
-	        
-	        for (int i = 0, count = children.size(); i < count; i++) {
-	            Node child = (Node)children.get(i);
-	            totalBackedupSize += child.totalBackedupSize();
-	        }
+        long totalBackedupSize = nodeBackedupSize();
+        
+        for (int i = 0, count = children.size(); i < count; i++) {
+            Node child = (Node)children.get(i);
+            totalBackedupSize += child.totalBackedupSize();
         }
         
         return totalBackedupSize;
@@ -157,17 +175,15 @@ public class Node implements XMLSerializable, Serializable
     
     public synchronized long nodeBackedupSize()
     {
-        if (nodeBackedupSize == -1) {
-	        nodeBackedupSize = 0;
-	        
-	        for (int i = 0, count = revisions.size(); i < count; i++) {
-	            Revision revision = (Revision)revisions.get(i);
+        long nodeBackedupSize = 0;
+        
+        for (int i = 0, count = revisions.size(); i < count; i++) {
+            Revision revision = (Revision)revisions.get(i);
 
-	            if (!revision.isDirectory()) {
-	                FileRevision fileRevision = (FileRevision)revision;
-	                nodeBackedupSize += fileRevision.backedupSize();
-	            }
-	        }
+            if (!revision.isDirectory()) {
+                FileRevision fileRevision = (FileRevision)revision;
+                nodeBackedupSize += fileRevision.effectiveBackedupSize();
+            }
         }
         
         return nodeBackedupSize;
@@ -193,15 +209,6 @@ public class Node implements XMLSerializable, Serializable
         }
     }
 
-    public synchronized void invalidateSizes()
-    {
-        nodeBackedupSize = -1;
-        totalBackedupSize = -1;
-        if (parent != null) {
-            parent.invalidateSizes();
-        }
-    }
-    
 	public synchronized File file()
 	{
 	    if (file == null) {
@@ -252,7 +259,6 @@ public class Node implements XMLSerializable, Serializable
             revisions = new ArrayList();
         }
         revisions.add(revision);
-        invalidateSizes();
     }
     
     public synchronized FileRevision findRevisionWithHandlerName(String name)
@@ -311,8 +317,9 @@ public class Node implements XMLSerializable, Serializable
         boolean didRemove = revisions.remove(revision);
 
         if (didRemove) {
-            invalidateSizes();
 
+            revision.revisionWasRemoved();
+            
             // Strictly speaking we should never have children with no
             // revisions.  There should be one or more DirectoryRevisions
             // containing those children.
@@ -474,7 +481,6 @@ public class Node implements XMLSerializable, Serializable
         }
         children.add(node);
         node.setParent(this);
-        invalidateSizes();
     }
     
     public synchronized void accumulateBackedupSizeRatiosForType(String extension, float ratioOut[], int numberOfRevisions[])
@@ -527,45 +533,12 @@ public class Node implements XMLSerializable, Serializable
 
     public XMLSerializable deserializeXML(XMLDeserializer deserializer, String container, String value)
     {
-		if ("name".equals(container)) {
-			setName(value);
-			return null;
-		}
-		else if ("node".equals(container)) {
-			Node child = new Node();
-			addChild(child);
-			return child;
-		}
-		else if ("file".equals(container) || "directory".equals(container)) {
-			Revision revision;
-			if ("file".equals(container)) {
-			    revision =  new FileRevision();
-			}
-			else {
-			    revision = new DirectoryRevision();			    
-			}
-			addRevision(revision);
-			return revision;
-		}
-		throw new RuntimeException("Unrecognized container: " + container);
+        throw new RuntimeException("Can't read xml");
     }
     
     public void writeData(DataOutputStream out) throws IOException
     {
-        out.writeUTF(name == null ? "" : name);
-
-        out.writeInt(children.size());
-		for (int i = 0, count = children.size(); i < count; i++) {
-			Node node = (Node)children.get(i);
-			node.writeData(out);
-		}
-
-        out.writeInt(revisions.size());
-		for (int i = 0, count = revisions.size(); i < count; i++) {
-		    Revision revision = (Revision)revisions.get(i);
-		    out.writeBoolean(revision.isDirectory());
-			revision.writeData(out);
-		}
+        throw new RuntimeException("Can't write legacy datastream");
     }
     
     public void readData(DataInputStream in) throws IOException
@@ -595,5 +568,66 @@ public class Node implements XMLSerializable, Serializable
 			addRevision(revision);
 			revision.readData(in);
         }
+    }
+
+    public void archive(ArchiveOutputStream output) throws IOException
+    {
+        output.writeClassVersion("com.toubassi.filebunker.vault.Node", 1);
+        output.writeUTF(name == null ? "" : name);
+        output.writeList(children, Archivable.StrictlyTypedReference);
+        output.writeList(revisions, Archivable.PolymorphicValue);
+    }
+    
+    public void unarchive(ArchiveInputStream input) throws IOException
+    {
+        input.readClassVersion("com.toubassi.filebunker.vault.Node");
+        
+        name = input.readUTF();
+        if (name.length() == 0) {
+            name = null;
+        }
+
+        children = input.readList(Archivable.StrictlyTypedReference, Node.class);
+        if (children.isEmpty()) {
+            children = Collections.EMPTY_LIST;
+        }
+        else {
+            for (int i = 0, count = children.size(); i < count; i++) {
+                Node child = (Node)children.get(i);
+                child.setParent(this);
+            }
+        }
+        revisions = input.readList(Archivable.PolymorphicValue, null);
+        if (revisions.isEmpty()) {
+            revisions = Collections.EMPTY_LIST;
+        }
+        else {
+            for (int i = 0, count = revisions.size(); i < count; i++) {
+                Revision revision = (Revision)revisions.get(i);
+                revision.setNode(this);
+            }
+        }
+    }
+    
+    /** For debugging/tests */
+    public void findMultiplyReferencedRevisionIdentifiers(List identifiers)
+    {
+        for (int i = 0; i < revisions.size(); i++) {
+            Revision revision = (Revision)revisions.get(i);
+            
+            if (!revision.isDirectory()) {
+                RevisionIdentifier identifier = ((FileRevision)revision).identifier();
+                
+                if (identifier.referenceCount() > 1 && !identifiers.contains(identifier)) {
+                    identifiers.add(identifier);
+                }
+            }
+        }
+        
+        for (int i = 0; i < children.size() ; i++) {
+            Node child = (Node)children.get(i);
+
+            child.findMultiplyReferencedRevisionIdentifiers(identifiers);
+        }        
     }
 }

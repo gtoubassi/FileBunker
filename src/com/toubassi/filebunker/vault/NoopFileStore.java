@@ -95,22 +95,24 @@ public class NoopFileStore implements FileStore
         return true;
     }
 
-    public RevisionIdentifier backupFile(File file, String backupName, long[] sizeOut, FileOperationListener listener) throws VaultException
+	public void backupFile(File file, String name, RevisionIdentifier identifier, FileOperationListener listener) throws VaultException
     {
         long size = file.length();
         
         if (listener != null) {
             for (int i = 0; i < 100; i++) {
                 if (!listener.fileProgress(file, size / 100 + 1)) {
-                    return null;
+                    throw new OperationCanceledVaultException();
                 }
             }
         }
         
-        sizeOut[0] = (long)(.7 * size);
-        adjustAvailable(-sizeOut[0]);
+        long backedupSize = (long)(.7 * size);
+        adjustAvailable(-backedupSize);
         NotificationCenter.sharedCenter().post(MaintenanceNeededNotification, this, null);
-        return new RevisionIdentifier(name);
+
+        identifier.setHandlerName(name());
+        identifier.setBackedupSize(backedupSize);
     }
 
     public InputStream restoreFile(RevisionIdentifier identifier, Date date) throws VaultException

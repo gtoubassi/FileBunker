@@ -30,10 +30,12 @@ package com.toubassi.filebunker.ui.restore;
 import com.toubassi.filebunker.ui.ImageCache;
 import com.toubassi.filebunker.ui.LabelUtil;
 import com.toubassi.filebunker.vault.FileRevision;
+import com.toubassi.filebunker.vault.Node;
 import com.toubassi.filebunker.vault.Revision;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 
 import org.eclipse.jface.viewers.ILabelProviderListener;
 import org.eclipse.jface.viewers.ITableLabelProvider;
@@ -66,6 +68,24 @@ public class RestoreTableLabelProvider implements ITableLabelProvider
         }
         
         if (columnIndex == 2) {
+
+            if (revision.isDirectory()) {
+                return "";
+            }
+            
+            Node node = revision.node();
+            List revisions = node.revisions();
+            int revisionCount = 0;
+            for (int i = 0, count = revisions.size(); i < count; i++) {
+                if (!((Revision)revisions.get(i)).isDirectory()) {
+                    revisionCount++;
+                }
+            }
+
+            return Integer.toString(revisionCount);
+        }
+        
+        if (columnIndex == 3) {
 
             if (revision.isDirectory()) {
                 return "";

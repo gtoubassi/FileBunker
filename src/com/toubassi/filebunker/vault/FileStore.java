@@ -93,22 +93,21 @@ public interface FileStore extends XMLSerializable
     public boolean canBackupFile(File file) throws VaultException;
     
 	/**
-	 * @param file		The file to backup (must exist in the file system)
-	 * @param name		An optional name that will be used to tag the
-	 * 					file.  In the future it may be possible to restore
-	 * 					a file by name (only the most recent version).
-	 * @param sizeOut	An out parameter returning the resulting size (bytes)
-	 * 					of the backed up file in sizeOut[0]
-	 * @param listener	An optional listener that will be notified periodically
-	 * 					during the upload via the fileProgress method.  The
-	 * 					bytesProcessed number is a number of bytes as a fraction
-	 * 					of the total size of the file.
+	 * @param file		 The file to backup (must exist in the file system)
+	 * @param name		 An optional name that will be used to tag the
+	 * 					 file.  In the future it may be possible to restore
+	 * 					 a file by name (only the most recent version).
+	 * @param listener	 An optional listener that will be notified periodically
+	 * 					 during the upload via the fileProgress method.  The
+	 * 					 bytesProcessed number is a number of bytes as a fraction
+	 * 		 			 of the total size of the file.
+	 * @param identifier An in/out parameter.  The store is expected to set the name
+	 * 					 and backedupSize on the identifier.
 	 * 
-	 * @return 			The RevisionIdentifier for the backed up file.  Null if the
-	 * 					listener canceled the operation.
-	 * @throws			VaultException
+	 * @return 			 The RevisionIdentifier for the backed up file.
+	 * @throws			 VaultException
 	 */
-	public RevisionIdentifier backupFile(File file, String name, long sizeOut[], FileOperationListener listener) throws VaultException;
+	public void backupFile(File file, String name, RevisionIdentifier identifier, FileOperationListener listener) throws VaultException;
 	
 	/**
 	 * The specified date is used to identify which password should be used

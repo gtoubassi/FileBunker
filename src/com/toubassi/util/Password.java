@@ -52,7 +52,7 @@ public class Password
         MessageDigest digest;
         
         try {            
-            digest = MessageDigest.getInstance("SHA");
+            digest = MessageDigest.getInstance("SHA-1");
             
             if (randomBytes != null) {
                 digest.update(randomBytes);

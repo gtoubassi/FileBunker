@@ -29,6 +29,7 @@ package com.toubassi.filebunker.vault.test;
 
 import com.toubassi.filebunker.vault.BackupDatabase;
 import com.toubassi.filebunker.vault.DirectoryRevision;
+import com.toubassi.filebunker.vault.FileDigest;
 import com.toubassi.filebunker.vault.FileRevision;
 import com.toubassi.filebunker.vault.Node;
 import com.toubassi.filebunker.vault.RevisionIdentifier;
@@ -36,6 +37,7 @@ import com.toubassi.filebunker.vault.RevisionIdentifier;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Iterator;
@@ -48,7 +50,84 @@ import java.util.SortedSet;
  */
 public class BackupDatabaseTest
 {
+    static final byte[] digestBytes = new byte[16];
+    
+    private static BackupDatabase clone(BackupDatabase db) throws Exception
+    {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        db.save(out);
+        
+        ByteArrayInputStream in = new ByteArrayInputStream(out.toByteArray());
+        BackupDatabase db2 = new BackupDatabase();
+        db2.load(in);        
+        return db2;
+    }
+    
+    public static void testContentIdentity() throws Exception
+    {
+        BackupDatabase db = new BackupDatabase();
+        
+        File file1 = new File("/file1");
+        File file2 = new File("/file2");
+        File file3 = new File("/file3");
+        File file4 = new File("/file4");
+        
+        byte[] digest1Bytes = new byte[16];
+        digest1Bytes[0] = 12;
+        FileDigest digest1 = new FileDigest(digest1Bytes);
+        
+        Date date1 = new Date();
+        RevisionIdentifier revisionID1 = new RevisionIdentifier("test", digest1, 1024, 1024);
 
+        db.recordRevision(file1, date1, revisionID1);
+
+        assert db.backedupBytes() == 1024;
+
+        RevisionIdentifier revisionID2 = new RevisionIdentifier("test", new FileDigest(digestBytes), 1024, 1024);
+
+        db.recordRevision(file2, date1, revisionID2);
+
+        assert db.backedupBytes() == 2048;
+
+        db.recordRevision(file3, date1, revisionID1);
+        assert db.backedupBytes() == 2048;
+        
+        db.recordRevision(file4, date1, revisionID1);
+        assert Math.abs(db.backedupBytes() - 2048) < 2;
+        
+        BackupDatabase db2 = clone(db);
+        assert db2.backedupBytes() == db.backedupBytes();
+        
+        ArrayList identifiers = new ArrayList();
+        db2.root().findMultiplyReferencedRevisionIdentifiers(identifiers);
+        assert identifiers.size() == 1;
+        assert ((RevisionIdentifier)identifiers.get(0)).referenceCount() == 3;
+        
+        FileRevision file4Revision = (FileRevision)db2.findRevision(file4, date1);
+
+        assert db2.removeRevision(file4Revision) == false;
+        assert Math.abs(db2.backedupBytes() - 2048) < 2;
+        
+        identifiers.clear();
+        db2.root().findMultiplyReferencedRevisionIdentifiers(identifiers);
+        assert identifiers.size() == 1;
+        assert ((RevisionIdentifier)identifiers.get(0)).referenceCount() == 2;
+
+        FileRevision file3Revision = (FileRevision)db2.findRevision(file3, date1);
+
+        assert db2.removeRevision(file3Revision) == false;
+        assert db2.backedupBytes() == 2048;
+        
+        identifiers.clear();
+        db2.root().findMultiplyReferencedRevisionIdentifiers(identifiers);
+        assert identifiers.size() == 0;
+
+        FileRevision file1Revision = (FileRevision)db2.findRevision(file1, date1);
+
+        assert db2.removeRevision(file1Revision) == true;
+        assert db2.backedupBytes() == 1024;
+    }
+    
     public static void testFindLargest() throws Exception
     {
         BackupDatabase db = new BackupDatabase();
@@ -62,22 +141,22 @@ public class BackupDatabaseTest
         
         Date date = new Date();
         for (int i = 0; i < files.length; i++) {
-            files[i] = new File("c:/file" + (i + 1));
+            files[i] = new File("/file" + (i + 1));
             sizes[i] = random.nextInt(10000000) + 1;
-            db.recordRevision(files[i], date, new RevisionIdentifier("test"), sizes[i]);
+            db.recordRevision(files[i], date, new RevisionIdentifier("test", new FileDigest(digestBytes), 0, sizes[i]));
         }
 
         Date date2 = new Date(date.getTime() + 1000);
         for (int i = 0; i < files.length; i++) {
             int size = random.nextInt(10000) + 1;
-            db.recordRevision(files[i], date2, new RevisionIdentifier("test"), size);
+            db.recordRevision(files[i], date2, new RevisionIdentifier("test", new FileDigest(digestBytes), 0, size));
             sizes[i] += size;
         }
 
         SortedSet all = db.findLargestNodes(-1);
         Iterator i = all.iterator();
 
-        // The root and c: node also show up.
+        // The root and / node also show up.
         assert all.size() == files.length + 2;
 
         Arrays.sort(sizes);
@@ -114,10 +193,10 @@ public class BackupDatabaseTest
     {
         BackupDatabase db = new BackupDatabase();
         
-        File file1 = new File("c:/dir1/dir2/file1");
-        File file2 = new File("c:/dir1/dir2/file2");
-        File file3 = new File("c:/dir1/dir2/fileordir3");
-        File dir = new File("c:/dir1/dir2");
+        File file1 = new File("/dir1/dir2/file1");
+        File file2 = new File("/dir1/dir2/file2");
+        File file3 = new File("/dir1/dir2/fileordir3");
+        File dir = new File("/dir1/dir2");
         
         // Make sure the empty db doesn't crash when asking for nonexistent nodes/revisions
         assert db.findNode(file1) == null;
@@ -128,9 +207,9 @@ public class BackupDatabaseTest
         Date date1 = new Date();
         
         // Test new revisions
-        db.recordRevision(file1, date1, new RevisionIdentifier("test"), 1024);
-        db.recordRevision(file2, date1, new RevisionIdentifier("test"), 1024);
-        db.recordRevision(file3, date1, new RevisionIdentifier("test"), 1024);
+        db.recordRevision(file1, date1, new RevisionIdentifier("test", new FileDigest(digestBytes), 0, 1024));
+        db.recordRevision(file2, date1, new RevisionIdentifier("test", new FileDigest(digestBytes), 0, 1024));
+        db.recordRevision(file3, date1, new RevisionIdentifier("test", new FileDigest(digestBytes), 0, 1024));
         
         Date date2 = new Date(date1.getTime() + 1000);
 
@@ -147,9 +226,9 @@ public class BackupDatabaseTest
         assert db.findNode(file1).nodeBackedupSize() == 1024;
         
         // Test follow on revisions
-        db.recordRevision(file1, date2, new RevisionIdentifier("test"), 1024);
-        db.recordRevision(file2, date2, new RevisionIdentifier("test"), 1024);
-        db.recordRevision(file3, date2, new RevisionIdentifier("test"), 1024);
+        db.recordRevision(file1, date2, new RevisionIdentifier("test", new FileDigest(digestBytes), 0, 1024));
+        db.recordRevision(file2, date2, new RevisionIdentifier("test", new FileDigest(digestBytes), 0, 1024));
+        db.recordRevision(file3, date2, new RevisionIdentifier("test", new FileDigest(digestBytes), 0, 1024));
         
         assert db.findRevision(file1, date2) != null;
         assert db.findRevision(file1, date1) != db.findRevision(file1, date2);
@@ -163,10 +242,10 @@ public class BackupDatabaseTest
         // Test changing a file to a directory
         Date date3 = new Date(date2.getTime() + 1000);
         
-        File file4 = new File("c:/dir1/dir2/fileordir3/file1");
+        File file4 = new File("/dir1/dir2/fileordir3/file1");
         assert db.findNode(file4) == null;
 
-        db.recordRevision(file4, date3, new RevisionIdentifier("test"), 1024);
+        db.recordRevision(file4, date3, new RevisionIdentifier("test", new FileDigest(digestBytes), 0, 1024));
 
         assert db.findRevision(file4, date3) != null;
         assert !db.findRevision(file3, date2).isDirectory();
@@ -181,7 +260,7 @@ public class BackupDatabaseTest
         
         // Test a new revision on the new subfile
         Date date4 = new Date(date3.getTime() + 1000);
-        db.recordRevision(file4, date4, new RevisionIdentifier("test"), 1024);
+        db.recordRevision(file4, date4, new RevisionIdentifier("test", new FileDigest(digestBytes), 0, 1024));
         assert db.findRevision(file4, date4) != null;
         assert db.findRevision(file4, date3) != null;
         assert db.findRevision(file4, date2) == null;
@@ -191,7 +270,7 @@ public class BackupDatabaseTest
         // Test changing a file to a directory
         Date date5 = new Date(date4.getTime() + 1000);
         
-        db.recordRevision(file3, date5, new RevisionIdentifier("test"), 1024);
+        db.recordRevision(file3, date5, new RevisionIdentifier("test", new FileDigest(digestBytes), 0, 1024));
         assert !db.findRevision(file3, date1).isDirectory();
         assert !db.findRevision(file3, date2).isDirectory();
         assert db.findRevision(file3, date3).isDirectory();
@@ -222,9 +301,9 @@ public class BackupDatabaseTest
 
     	// Add back a different third file to the directory
         Date date7 = new Date(date6.getTime() + 1000);
-        File file5 = new File("c:/dir1/dir2/file5");
+        File file5 = new File("/dir1/dir2/file5");
         
-        db.recordRevision(file5, date7, new RevisionIdentifier("test"), 1024);
+        db.recordRevision(file5, date7, new RevisionIdentifier("test", new FileDigest(digestBytes), 0, 1024));
         assert db.findRevision(file5, date6) == null;
         assert db.findRevision(file5, date7) != null;
 
@@ -309,5 +388,6 @@ public class BackupDatabaseTest
         assert db.root().totalBackedupSize() == db3.root().totalBackedupSize();
         
         testFindLargest();
+        testContentIdentity();
     }
 }

@@ -81,36 +81,39 @@ public class PerformBackup implements IRunnableWithProgress
 
         try {
             estimate = vault.estimateBackup(spec, new BackupEstimateListener(monitor));
-            
-            // Lets be conservative since this is an estimate based on past
-            // compression performance
-            long estimatedSize = (long)(estimate.estimatedBackupSize() * 1.1);
-            
-            // Also take an upper bound by adding the uncompressed total size + room for
-            // headers, etc per file.  This isn't totally accurate since some large files
-            // may split into many messages and require much more for headers.  Really
-            // we need to delegate this kind of calculation to the store since only it
-            // knows how much overhead per byte or file is needed.
-            long highEstimate = estimate.totalSize() + 2048 * estimate.numberOfFiles();
-            
-            if (estimatedSize > highEstimate) {
-                estimatedSize = highEstimate;
-            }
-            
-            long available = vault.availableBytes();
-            
-            if (estimatedSize > available) {
-                long amountNeeded = estimatedSize - available;
 
-                monitor.setTaskName("Reclaiming storage space");
-                long amountRecovered = vault.recoverBytes(amountNeeded, new RecoverBytesListener(monitor));
-                if (amountRecovered < amountNeeded) {
-                    throw new InsufficientSpaceException();
-                }
+            if (estimate.numberOfFiles() > 0) {
+                
+	            // Lets be conservative since this is an estimate based on past
+	            // compression performance
+	            long estimatedSize = (long)(estimate.estimatedBackupSize() * 1.1);
+	            
+	            // Also take an upper bound by adding the uncompressed total size + room for
+	            // headers, etc per file.  This isn't totally accurate since some large files
+	            // may split into many messages and require much more for headers.  Really
+	            // we need to delegate this kind of calculation to the store since only it
+	            // knows how much overhead per byte or file is needed.
+	            long highEstimate = estimate.totalSize() + 2048 * estimate.numberOfFiles();
+	            
+	            if (estimatedSize > highEstimate) {
+	                estimatedSize = highEstimate;
+	            }
+	            
+	            long available = vault.availableBytes();
+	            
+	            if (estimatedSize > available) {
+	                long amountNeeded = estimatedSize - available;
+	
+	                monitor.setTaskName("Reclaiming storage space");
+	                long amountRecovered = vault.recoverBytes(amountNeeded, new RecoverBytesListener(monitor));
+	                if (amountRecovered < amountNeeded) {
+	                    throw new InsufficientSpaceException();
+	                }
+	            }
+	            
+	            monitor.setTaskName("Backing up files");
+	            vault.backup(spec, new BackupListener(monitor, estimate.totalSize()), result);
             }
-            
-            monitor.setTaskName("Backing up files");
-            vault.backup(spec, new BackupListener(monitor, estimate.totalSize()), result);
             
             monitor.done();
         }

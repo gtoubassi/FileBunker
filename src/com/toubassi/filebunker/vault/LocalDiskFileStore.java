@@ -89,11 +89,10 @@ public class LocalDiskFileStore implements FileStore
         return true;
     }
 
-    public RevisionIdentifier backupFile(File file, String name, long[] sizeOut,
-            FileOperationListener listener) throws VaultException
+	public void backupFile(File file, String name, RevisionIdentifier identifier, FileOperationListener listener) throws VaultException
     {
 		try {
-            RevisionIdentifier identifier = new RevisionIdentifier(name());
+            identifier.setHandlerName(name());
             
 	        String password = vaultConfig.currentPassword();
 	        ByteCountingInputStream countingStream = FileStoreUtil.backupInputStream(file, password, listener);
@@ -116,10 +115,9 @@ public class LocalDiskFileStore implements FileStore
 			countingStream.close();                
             bufferedOutput.close();                
 
-		    sizeOut[0] = countingStream.byteCount();
-		    adjustAvailableBytes(-sizeOut[0]);
-
-            return identifier;
+		    long backedupSize = countingStream.byteCount();
+		    adjustAvailableBytes(backedupSize);
+		    identifier.setBackedupSize(backedupSize);
 		}
 		catch (OperationCanceledIOException e) {
 		    throw new OperationCanceledVaultException(e);
@@ -205,7 +203,17 @@ public class LocalDiskFileStore implements FileStore
                 buffer.append(b);
                 buffer.append(File.separatorChar);
             }
-            buffer.append(guid);
+            
+            for (int i = 0, count = guid.length(); i < count;  i++) {
+                char ch = guid.charAt(i);
+                
+                if (ch == File.separatorChar) {
+                    buffer.append("slash");
+                }
+                else {
+                    buffer.append(guid);
+                }
+            }
             return new File(buffer.toString());
         }
         catch (NoSuchAlgorithmException e) {

@@ -27,6 +27,9 @@ THE SOFTWARE.
  */
 package com.toubassi.filebunker.vault;
 
+import com.toubassi.archive.Archivable;
+import com.toubassi.archive.ArchiveInputStream;
+import com.toubassi.archive.ArchiveOutputStream;
 import com.toubassi.io.XMLDeserializer;
 import com.toubassi.io.XMLSerializable;
 import com.toubassi.io.XMLSerializer;
@@ -160,35 +163,12 @@ public class DirectoryRevision extends Revision
 
     public XMLSerializable deserializeXML(XMLDeserializer deserializer, String container, String value)
     {
-        if ("added".equals(container)) {
-            Node child = node.childWithName(value);
-            addChild(child);
-        }
-        else if ("removed".equals(container)) {
-            Node child = node.childWithName(value);
-            removeChild(child);
-        }
-        else {
-            super.deserializeXML(deserializer, container, value);            
-        }
-        return null;
+        throw new RuntimeException("Can't read xml");
     }
 
     public void writeData(DataOutputStream out) throws IOException
     {
-        super.writeData(out);
-        
-        out.writeInt(added.size());
-	    for (int i = 0, count = added.size(); i < count; i++) {
-	        Node child = (Node)added.get(i);
-	        out.writeUTF(child.name());
-	    }
-
-        out.writeInt(removed.size());
-	    for (int i = 0, count = removed.size(); i < count; i++) {
-	        Node child = (Node)removed.get(i);
-	        out.writeUTF(child.name());
-	    }
+        throw new RuntimeException("Can't write legacy datastream");
     }
     
     public void readData(DataInputStream in) throws IOException
@@ -206,6 +186,22 @@ public class DirectoryRevision extends Revision
             Node child = node.childWithName(in.readUTF());
             removeChild(child);            
         }
+    }
+
+    public void archive(ArchiveOutputStream output) throws IOException
+    {
+        super.archive(output);
+        output.writeClassVersion("com.toubassi.filebunker.vault.DirectoryRevision", 1);
+        output.writeList(added, Archivable.StrictlyTypedReference);
+        output.writeList(removed, Archivable.StrictlyTypedReference);
+    }
+    
+    public void unarchive(ArchiveInputStream input) throws IOException
+    {
+        super.unarchive(input);
+        input.readClassVersion("com.toubassi.filebunker.vault.DirectoryRevision");
+        added = input.readList(Archivable.StrictlyTypedReference, Node.class);
+        removed = input.readList(Archivable.StrictlyTypedReference, Node.class);
     }
 }
 

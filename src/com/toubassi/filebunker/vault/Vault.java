@@ -99,16 +99,7 @@ public class Vault implements NotificationListener, XMLSerializable
             NotificationCenter.sharedCenter().register(store, this);
 
             // Create the index
-            File databaseFile = new File(configDirectory, "database");
-        
-            backupdb = new BackupDatabase();
-
-            long start, end;
-
-            start = System.currentTimeMillis();
-            backupdb.setFile(databaseFile);
-            end = System.currentTimeMillis();
-            //System.out.println("Load time: " + (end - start));
+            backupdb = new BackupDatabase(configDirectory);
 
             NotificationCenter.sharedCenter().register(backupdb, this);
         }
@@ -200,9 +191,9 @@ public class Vault implements NotificationListener, XMLSerializable
     public BackupEstimate estimateBackup(BackupSpecification spec,
             FileOperationListener listener) throws VaultException
     {
-        BackupEstimate estimate = new BackupEstimate(listener, backupdb);
+        BackupEstimate estimate = new BackupEstimate(null, backupdb);
 
-        spec.find(backupdb, estimate);
+        spec.find(backupdb, estimate, listener);
 
         return estimate;
     }
@@ -212,12 +203,22 @@ public class Vault implements NotificationListener, XMLSerializable
     {
         try {
             file = file.getCanonicalFile();
+            
             RevisionIdentifier identifier;
-            long[] size = new long[1];
+            FileDigest digest = new FileDigest(file);
 
-            identifier = store.backupFile(file, null, size, listener);
+            // See if there is an existing file in the backup repository
+            // that has the same content.
+            FileRevision existingRevision = backupdb.fileRevisionWithDigest(digest);
+            if (existingRevision != null) {
+                identifier = existingRevision.identifier();
+            }
+            else {
+                identifier = new RevisionIdentifier(digest, file.length());
+                store.backupFile(file, null, identifier, listener);
+            }
 
-            return backupdb.recordRevision(file, date, identifier, size[0]);
+            return backupdb.recordRevision(file, date, identifier);                
         }
         catch (IOException e) {
             throw new VaultException(file, e);
@@ -275,7 +276,10 @@ public class Vault implements NotificationListener, XMLSerializable
                         listener.willProcessFile(backupdb.file());
                     }
                     
-                    store.backupFile(backupdb.file(), "BackupIndex", new long[1], listener);
+                    FileDigest digest = new FileDigest(backupdb.file());
+                    long size = backupdb.file().length();
+                    RevisionIdentifier identifier = new RevisionIdentifier(digest, size);
+                    store.backupFile(backupdb.file(), "BackupIndex", identifier, listener);
                 }
             }
             catch (VaultException e) {
@@ -454,11 +458,20 @@ public class Vault implements NotificationListener, XMLSerializable
         return directory;        
     }
 
-    private void deleteRevision(FileRevision revision) throws VaultException,
+    /**
+     * Returns true if any data was removed from the store.  If multiple
+     * revisions are sharing the same data in the store (2 files with the
+     * same content) then this may amount to an "unlink" of a file with
+     * multiple hard links.
+     */
+    private boolean deleteRevision(FileRevision revision) throws VaultException,
             IOException
     {
-        store.deleteFile(revision.identifier(), revision.backedupSize());
-        backupdb.removeRevision(revision);
+        if (backupdb.removeRevision(revision)) {
+            store.deleteFile(revision.identifier(), revision.backedupSize());
+            return true;
+        }
+        return false;
     }
 
     private void performDelete(File file, Date date) throws VaultException,
@@ -484,7 +497,6 @@ public class Vault implements NotificationListener, XMLSerializable
         } else {
             FileRevision fileRevision = (FileRevision) revision;
 
-            System.out.println("Deleting " + file);
             deleteRevision(fileRevision);
         }
     }

@@ -183,7 +183,7 @@ public class RestoreController implements XMLSerializable
         sash = new SashForm(restoreContents, SWT.VERTICAL);
         
         // Build the "File Explorer"
-        explorer = new Explorer(sash, new String[] {"Name", "Size", "Backup Date"}, new int[] {200, 100, 140}, SWT.NONE);
+        explorer = new Explorer(sash, new String[] {"Name", "Size", "Versions", "Backup Date"}, new int[] {200, 100, 70, 140}, SWT.NONE);
         explorer.setLabelProvider(new RestoreTableLabelProvider());
         explorer.setHideLeavesInTree(true);
         explorer.setSorter(new RestoreExplorerSorter());
@@ -430,14 +430,14 @@ public class RestoreController implements XMLSerializable
             MessageDialog.openInformation(shell, "Restore Complete", message);
         }
         catch (InvocationTargetException e) {
-            handleException(e, result, performRestore.estimate());
+            handleException(e, restoreSpec, result, performRestore.estimate());
         }
         catch (InterruptedException e) {
-            handleException(e, result, performRestore.estimate());
+            handleException(e, restoreSpec, result, performRestore.estimate());
         }
     }
     
-    private void handleException(Exception e, RestoreResult result, RestoreEstimate estimate)
+    private void handleException(Exception e, RestoreSpecification restoreSpec, RestoreResult result, RestoreEstimate estimate)
     {
         VaultException vaultException = VaultException.extract(e);
 
@@ -459,10 +459,26 @@ public class RestoreController implements XMLSerializable
         }
         else if (vaultException instanceof FileNotFoundInStoreException) {
             String message;
+            File file = vaultException.file();
             
-            if (vaultException.file() != null) {
-                message = "FileBunker was unable to find " + vaultException.file().getName() +
-            			" in the backup repository.  ";                
+            if (file != null) {
+                
+                message = "FileBunker was unable to find " + file.getName() +
+    			" in the backup repository.  ";                                    
+
+                // See if it was recently backed up.
+                FileRevision fileRevision = restoreSpec.findFileRevision(vault, file);
+
+                if (fileRevision != null) {
+                    long currentMillis = System.currentTimeMillis();
+                    long backupMillis = fileRevision.date().getTime();
+                
+                    if (currentMillis - backupMillis < 4*60*60*1000) {
+                        message += "The file was backed up very recently, and " +
+                		"it may not appear in the backup repository " +
+                		"for several hours.  Please try again later.  ";
+                    }
+                }
             }
             else {
                 message = "FileBunker was unable to find a requested file" +

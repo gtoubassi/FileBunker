@@ -252,6 +252,8 @@ public abstract class WebMailFileStore implements FileStore
     public void setConfiguration(VaultConfiguration configuration)
     {
         vaultConfig = configuration;
+        // Make sure to invalidate the session since our config is changing.
+        session = null;
     }
 
     public boolean canHandleRevision(RevisionIdentifier identifier)
@@ -265,15 +267,14 @@ public abstract class WebMailFileStore implements FileStore
         return file.length() < availableBytes();
     }
 
-    public RevisionIdentifier backupFile(File file, String name,
-            long[] sizeOut, FileOperationListener listener)
-            throws VaultException
+	public void backupFile(File file, String name, RevisionIdentifier identifier, FileOperationListener listener) throws VaultException
     {
         ChunkedInputStream chunkedStream = null;
-        RevisionIdentifier identifier = new RevisionIdentifier(name());
 
         try {
 
+            identifier.setHandlerName(name());
+            
             String encryptionPassword = vaultConfig.currentPassword();
             ByteCountingInputStream countingStream = FileStoreUtil.backupInputStream(file, encryptionPassword, listener);
             chunkedStream = new ChunkedInputStream(countingStream, maximumMessageSize());
@@ -295,28 +296,29 @@ public abstract class WebMailFileStore implements FileStore
                 sendPart(file, name, attachmentName, part, identifier.guid(), chunkedStream);
             }
 
-            sizeOut[0] = countingStream.byteCount();
+            long backedupSize = countingStream.byteCount();
 
             // Round up for slop (headers, etc)
-            adjustAvailableBytes(-(sizeOut[0] + 1024));
+            adjustAvailableBytes(-(backedupSize + 1024));
 
+            identifier.setBackedupSize(backedupSize);
+            
             NotificationCenter.sharedCenter().post(
                     MaintenanceNeededNotification, this, null);
 
-            return identifier;
         } catch (VaultException e) {
             throw e;
         } catch (MessagingException e) {
             if (ExceptionUtil.extract(OperationCanceledIOException.class, e) != null) {
-                throw new OperationCanceledVaultException();
+                throw new OperationCanceledVaultException(file);
             }
             throw new VaultException(file, "Error detected sending file", e);
         } catch (OperationCanceledIOException e) {
             // This is unlikely to occur, it will most likely be packaged in
             // a MessagingException handled above.
-            throw new OperationCanceledVaultException();
+            throw new OperationCanceledVaultException(file);
         } catch (IOException e) {
-            throw new VaultException(e);
+            throw new VaultException(file, e);
         } finally {
             if (chunkedStream != null) {
                 try {
