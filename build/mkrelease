@@ -178,8 +178,16 @@ sub buildArchive
 
 sub buildSourceArchive()
 {
-    !system("cd ../..; zip -qr9 FileBunker/release/FileBunker-$version-src.zip FileBunker/README FileBunker/doc FileBunker/build FileBunker/src FileBunker/testing")
+    !system("mkdir -p ../release/src-scratch-$version/FileBunker")
+    	or die "Cannot mkdir ../release/src-scratch-$version/FileBunker: $!\n";
+    !system("cp -r ../README ../doc ../build ../src ../testing ../release/src-scratch-$version/FileBunker")
+    	or die "Cannot copy source files: $!\n";
+    !system("find ../release/src-scratch-$version/FileBunker -type d -name CVS -prune | xargs rm -rf")
+    	or die "Cannot clean out CVS directories for src release: $!\n";
+    !system("cd ../release/src-scratch-$version; zip -qr9 ../FileBunker-$version-src.zip FileBunker")
         or die "Could not create source zip file: $!\n";
+    !system("rm -rf ../release/src-scratch-$version")
+    	or die "Cannot remove ../release/src-scratch-$version/FileBunker: $!\n";
 }
 
 sub main
