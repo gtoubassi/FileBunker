@@ -69,25 +69,29 @@ public class ExplorerCheckStateListener implements ICheckStateListener
             treeViewer.setChecked(element, contentProvider.isChecked(element));
         }
         
-        TreeItem item;
         
         if (element == null) {
 		    TreeItem[] items = treeViewer.getTree().getItems();
 		    
-		    if (items == null || items.length == 0) {
-		        return;
+		    for (int i = 0, count = items.length; i < count; i++) {
+                updateTreeCheckboxesForItem(items[i]);
 		    }
-		    
-		    item = items[0];
         }
         else {
-            item = ((TreeViewerAccess)treeViewer).itemForElement(element);
-        }
+            TreeItem item = ((TreeViewerAccess)treeViewer).itemForElement(element);
+            
+            updateTreeCheckboxesForItem(item);
+        }        
+    }
+    
+    private void updateTreeCheckboxesForItem(TreeItem item)
+    {
+        ICheckboxTreeContentProvider contentProvider = contentProvider();
         
-        do {
+        while (item != null) {
             item.setChecked(contentProvider.isChecked(item.getData()));
             item = ((TreeViewerAccess)treeViewer).getNextItem(item, true);
-        } while (item != null);        
+        }                
     }
     
     public void updateTableCheckboxes()
