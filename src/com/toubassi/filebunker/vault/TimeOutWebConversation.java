@@ -33,11 +33,20 @@ import com.meterware.httpunit.WebConversation;
 import com.meterware.httpunit.WebRequest;
 import com.meterware.httpunit.WebResponse;
 
+import java.security.cert.X509Certificate;
+
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+
 /**
  * @author garrick
  */
 public class TimeOutWebConversation extends WebConversation
 {
+    private static boolean proxyEnabled = false;
+    
     private TimeOutConversationListener timeOutListener;
     
     public TimeOutWebConversation(int timeOutSeconds)
@@ -49,6 +58,45 @@ public class TimeOutWebConversation extends WebConversation
     public boolean hasTimedOut()
     {
         return timeOutListener.hasTimedOut();
+    }
+    
+    public void setEnableProxy(String host, int port)
+    {
+        if (!proxyEnabled) {
+            proxyEnabled = true;
+
+    	    TrustManager[] trustAllCerts = new TrustManager[]{
+	            new X509TrustManager() {
+	                public X509Certificate[] getAcceptedIssuers()
+	                {
+	                    return null;
+	                }
+	                public void checkClientTrusted(X509Certificate[] certs, String authType)
+	                {
+	                }
+	                public void checkServerTrusted(X509Certificate[] certs, String authType)
+	                {
+	                }
+	            }
+	        };
+    	        
+	        // Install the all-trusting trust manager
+	        try {
+	            SSLContext sc = SSLContext.getInstance("SSL");
+	            sc.init(null, trustAllCerts, new java.security.SecureRandom());
+	            HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+	            // This line commented out to avoid deprecated warning 
+	            // HttpsURLConnectionOldImpl.setDefaultSSLSocketFactory(sc.getSocketFactory()); 
+	        } catch (Exception e) {
+	            e.printStackTrace();
+	        }
+        }
+
+		setProxyServer(host, port);
+		System.setProperty("http.proxyHost", host);
+		System.setProperty("http.proxyPort", Integer.toString(port));
+		System.setProperty("https.proxyHost",host);
+		System.setProperty("https.proxyPort", Integer.toString(port));
     }
 
 }

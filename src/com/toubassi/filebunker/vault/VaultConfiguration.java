@@ -138,6 +138,12 @@ public class VaultConfiguration implements XMLSerializable
         }
     }
     
+    public void removeParameterForKey(String key)
+    {
+        parameters.remove(key);
+        secureParameters.remove(key);
+    }
+    
     public void setParameterForKey(String key, String value)
     {
         setParameterForKey(key, value, false);

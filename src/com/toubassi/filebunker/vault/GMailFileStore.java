@@ -63,14 +63,17 @@ public class GMailFileStore extends WebMailFileStore
 	private static final Pattern utilizationPattern = Pattern.compile("D\\(\\[\"qu\",\"(\\d+) MB\",\"(\\d+) MB");
 	
 	protected TimeOutWebConversation createLoggedInConversation() throws VaultException
-	{
+	{	    	    
 		try {
 			HttpUnitOptions.setScriptingEnabled(false);
 			
 			// For now we assume a time out of 10 minutes.
 			TimeOutWebConversation wc = new TimeOutWebConversation(10*60);
+	
+			// For debugging with Charles.exe
+			// wc.setEnableProxy("localhost", 8888);
 			
-			WebResponse wr = wc.getResponse( "http://gmail.google.com" );
+			WebResponse wr = wc.getResponse("http://gmail.google.com/");
 			
 			String[] frameNames = wc.getFrameNames();
 			WebForm loginForm = null;
@@ -261,7 +264,7 @@ public class GMailFileStore extends WebMailFileStore
 	    TimeOutWebConversation wc = checkOutConversation();
 
 	    try
-		{			
+		{	
 			WebResponse wr = wc.getResponse("http://gmail.google.com/gmail?search=inbox&view=tl&start=0&init=1");
 			String text = wr.getText();
 

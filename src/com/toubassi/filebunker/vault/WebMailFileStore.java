@@ -86,6 +86,7 @@ public abstract class WebMailFileStore implements FileStore
 	public static final String SmtpUseAuthenticationKey = "SmtpUseAuthentication";
 	public static final String SmtpUsernameKey = "SmtpUser";
 	public static final String SmtpPasswordKey = "SmtpPassword";
+	public static final String OutgoingMessageSizeLimitKey = "OutgoingMessageSizeLimit";
 
     public static final String FromEmailKey = "FromEmail";
 
@@ -255,6 +256,20 @@ public abstract class WebMailFileStore implements FileStore
         // Make sure to invalidate the session since our config is changing.
         session = null;
     }
+    
+    /** Returns 0 if no limit. */
+    private int outgoingMessageSizeLimit()
+    {
+        String limitString = vaultConfig.parameterForKey(OutgoingMessageSizeLimitKey);
+        if (limitString == null) {
+            return 0;
+        }
+        // We correct for the base64 encoding that the attachment will
+        // undergo (is this right?).  Which should be a 6/8 ratio plus
+        // 10% slop.
+        float limit = Integer.parseInt(limitString);
+        return (int)(limit * 5.5/8.0 * .9);
+    }
 
     public boolean canHandleRevision(RevisionIdentifier identifier)
     {
@@ -277,7 +292,14 @@ public abstract class WebMailFileStore implements FileStore
             
             String encryptionPassword = vaultConfig.currentPassword();
             ByteCountingInputStream countingStream = FileStoreUtil.backupInputStream(file, encryptionPassword, listener);
-            chunkedStream = new ChunkedInputStream(countingStream, maximumMessageSize());
+            int maxMessageSize = maximumMessageSize();
+            
+            int outgoingLimit = outgoingMessageSizeLimit();            
+            if (outgoingLimit > 0) {
+                maxMessageSize = Math.min(maxMessageSize, outgoingLimit);
+            }
+            
+            chunkedStream = new ChunkedInputStream(countingStream, maxMessageSize);
 
             // Send as many parts as are necessary
             for (int part = 0; chunkedStream.hasMoreChunks(); chunkedStream.nextChunk(), part++) {

@@ -60,6 +60,7 @@ import org.eclipse.swt.layout.FormLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
+import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Label;
@@ -86,8 +87,13 @@ public class ConfigurationDialog extends ContextHintDialog
         	"credentials by clicking the 'Configure' button.";
     
     private static final String smtpAuthenticationConfigureHint =
-        	"Click this button to configure your SMTP authentication " +
-        	"credentials.";
+    	"Click this button to configure your SMTP authentication " +
+    	"credentials.";
+
+    private static final String messageSizeConfigureHint =
+    	"If your outgoing mail server has a limit on the size of " +
+    	"messages, specify that here.  Note that GMail's 10MB " +
+    	"message size limit will be enforced separately.";
 
     private static final String passwordFieldHint =
             "Please enter your FileBunker password.  This password will be " +
@@ -118,6 +124,14 @@ public class ConfigurationDialog extends ContextHintDialog
         "Click the Delete button to remove an email account as a " +
         "storage repository.";                    
 
+    private static final String messageSizeChoiceLabels[] = {"No Limit",
+            "256 KB", "1 MB", "2 MB", "3 MB", "4 MB", "5 MB", "6 MB",
+            "7 MB", "8 MB", "9 MB", "10 MB"}; 
+    
+    private static final int messageSizeChoices[] = {0, 256*1024, 1024*1024,
+            2*1024*1024, 3*1024*1024, 4*1024*1024, 5*1024*1024, 6*1024*1024, 
+            7*1024*1024, 8*1024*1024, 9*1024*1024, 10*1024*1024};
+
     private Vault vault;
     private VaultConfiguration vaultConfiguration;
     private ArrayList stores;
@@ -126,6 +140,8 @@ public class ConfigurationDialog extends ContextHintDialog
     private Button smtpAuthenticationCheckbox;
     private Button smtpAuthenticationConfigureButton;
 
+    private Combo messageSizeCombo;
+    
     private Text passwordField;
     private Text confirmPasswordField;
     
@@ -192,6 +208,28 @@ public class ConfigurationDialog extends ContextHintDialog
         String smtp = vaultConfiguration.parameterForKey(WebMailFileStore.SmtpServerKey);
         
         smtpField.setText(smtp == null ? "" : smtp);
+        
+        String messageLimitString = vaultConfiguration.parameterForKey(WebMailFileStore.OutgoingMessageSizeLimitKey);
+        if (messageLimitString == null || messageLimitString.equals("")) {
+            messageSizeCombo.select(0);
+        }
+        else {
+            int limit = Integer.parseInt(messageLimitString);
+            
+            for (int i = 0; i < messageSizeChoices.length; i++) {
+                
+                // Select the nearest match that is less than or equal to the
+                // configured value.
+                if (limit == messageSizeChoices[i] ||
+                    (i < messageSizeChoices.length - 1 &&
+                     limit > messageSizeChoices[i] &&
+                     limit < messageSizeChoices[i + 1]))
+                {
+                    messageSizeCombo.select(i);
+                    break;
+                }
+            }
+        }
     }
 
     private void updateModelFromUI()
@@ -208,6 +246,14 @@ public class ConfigurationDialog extends ContextHintDialog
         vaultConfiguration.setParameterForKey(WebMailFileStore.SmtpUseAuthenticationKey,
                 smtpAuthenticationCheckbox.getSelection() ? "true" : "false");
         
+        int messageLimit = messageSizeChoices[messageSizeCombo.getSelectionIndex()];
+        if (messageLimit == 0) {
+            vaultConfiguration.removeParameterForKey(WebMailFileStore.OutgoingMessageSizeLimitKey);
+        }
+        else {
+            vaultConfiguration.setParameterForKey(WebMailFileStore.OutgoingMessageSizeLimitKey, Integer.toString(messageLimit));
+        }
+
         try {
             vault.updateContents(vaultConfiguration, stores);
         }
@@ -437,6 +483,28 @@ public class ConfigurationDialog extends ContextHintDialog
             }
         });
         
+        // Outgoing Attachment Size Limit:
+        Label spacer = new Label(contents, SWT.NONE);
+        spacer.setLayoutData(new GridData(4, 8));
+        spacer = new Label(contents, SWT.NONE);
+        spacer.setLayoutData(new GridData(4, 8));
+
+        Label messageSizeLabel = new Label(contents, SWT.NONE);
+        messageSizeLabel.setText("Message Size:");
+
+        GridData messageSizeGridData = new GridData(GridData.VERTICAL_ALIGN_CENTER);
+        messageSizeLabel.setLayoutData(messageSizeGridData);
+        
+        messageSizeCombo = new Combo(contents, SWT.DROP_DOWN | SWT.READ_ONLY);
+        setControlHint(messageSizeCombo, messageSizeConfigureHint);
+        GridData messageSizeFieldGridData = new GridData(GridData.FILL_HORIZONTAL);
+        messageSizeCombo.setLayoutData(messageSizeFieldGridData);
+        
+        messageSizeCombo.setVisibleItemCount(messageSizeChoiceLabels.length);
+        for (int i = 0; i < messageSizeChoiceLabels.length; i++) {
+            messageSizeCombo.add(messageSizeChoiceLabels[i]);
+        }
+        
         // Show drives field
 
         if (Platform.isWindows()) {
@@ -444,10 +512,10 @@ public class ConfigurationDialog extends ContextHintDialog
             allDrives = File.listRoots();
             if (allDrives.length > 1) {
             
-	            Label spacer = new Label(contents, SWT.NONE);
-	            spacer.setLayoutData(new GridData(4, 4));
-	            Label spacer2 = new Label(contents, SWT.NONE);
-	            spacer2.setLayoutData(new GridData(4, 4));
+	            spacer = new Label(contents, SWT.NONE);
+	            spacer.setLayoutData(new GridData(4, 8));
+	            spacer = new Label(contents, SWT.NONE);
+	            spacer.setLayoutData(new GridData(4, 8));
 	
 	            Label visibleDrivesLabel = new Label(contents, SWT.NONE);
 	            visibleDrivesLabel.setText("Show Drives:");
