@@ -318,11 +318,11 @@ public class Explorer extends Composite
         sash = new SashForm(this, SWT.HORIZONTAL);
         
         if (isChecked) {
-            checkboxTreeViewer = new CheckboxTreeViewer(sash);
+            checkboxTreeViewer = new ExtendedCheckboxTreeViewer(sash);
             treeViewer = checkboxTreeViewer;
         }
         else {
-            treeViewer = new TreeViewer(sash);            
+            treeViewer = new ExtendedTreeViewer(sash);            
         }
         
         if (isChecked) {

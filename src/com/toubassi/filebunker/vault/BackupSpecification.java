@@ -131,7 +131,7 @@ public class BackupSpecification implements XMLSerializable
     public void validateContents()
     {
         boolean changed = false;
-        ;
+
         for (int i = includedFiles.size() - 1; i >= 0; i--) {
             File file = (File)includedFiles.get(i);
             

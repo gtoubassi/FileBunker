@@ -32,6 +32,9 @@ import org.eclipse.jface.viewers.CheckStateChangedEvent;
 import org.eclipse.jface.viewers.CheckboxTableViewer;
 import org.eclipse.jface.viewers.CheckboxTreeViewer;
 import org.eclipse.jface.viewers.ICheckStateListener;
+import org.eclipse.swt.widgets.Table;
+import org.eclipse.swt.widgets.TableItem;
+import org.eclipse.swt.widgets.TreeItem;
 
 /**
  * @author garrick
@@ -59,42 +62,44 @@ public class ExplorerCheckStateListener implements ICheckStateListener
     }
     
     public void updateTreeCheckboxesForAncestor(Object element)
-    {                
+    {
         ICheckboxTreeContentProvider contentProvider = contentProvider();
         
         if (element != null) {
             treeViewer.setChecked(element, contentProvider.isChecked(element));
         }
         
-        if (element == null || treeViewer.getExpandedState(element)) {
-            Object[] children;
-            
-            if (element != null) {
-                children = contentProvider.getChildren(element);
-            }
-            else {
-                children = contentProvider.getElements(treeViewer.getInput());
-            }
-            
-            for (int i = 0; i < children.length; i++) {
-                updateTreeCheckboxesForAncestor(children[i]);
-            }
+        TreeItem item;
+        
+        if (element == null) {
+		    TreeItem[] items = treeViewer.getTree().getItems();
+		    
+		    if (items == null || items.length == 0) {
+		        return;
+		    }
+		    
+		    item = items[0];
         }
+        else {
+            item = ((TreeViewerAccess)treeViewer).itemForElement(element);
+        }
+        
+        do {
+            item.setChecked(contentProvider.isChecked(item.getData()));
+            item = ((TreeViewerAccess)treeViewer).getNextItem(item, true);
+        } while (item != null);        
     }
     
     public void updateTableCheckboxes()
     {
-        Object input = tableViewer.getInput();
-
-        if (input != null) {
-            ICheckboxTreeContentProvider contentProvider = contentProvider();
-	        Object[] children = (Object[])contentProvider.getChildren(input);
-	        
-	        for (int i = 0; i < children.length; i++) {
-	            Object child = (Object)children[i];
-	            
-	            tableViewer.setChecked(child, contentProvider.isChecked(child));
-	        }
+        ICheckboxTreeContentProvider contentProvider = contentProvider();
+        Table table = tableViewer.getTable();
+        int count = table.getItemCount();
+        
+        for (int i = 0; i < count; i++) {
+            TableItem item = table.getItem(i);
+            
+            item.setChecked(contentProvider.isChecked(item.getData()));
         }
     }
     

@@ -40,6 +40,11 @@ import javax.mail.MessagingException;
 import javax.mail.internet.MimeUtility;
 
 /**
+ * This class exists only for legacy purposes.  In FileBunker .95.1 and
+ * earlier, GUIDs were generated using this class.  We now generate GUIDs
+ * using the FileDigest class.  This class still exists for the purpose of
+ * providing backward compatibility to files backed up using the older
+ * versions.
  * @author garrick
  */
 public class GUID implements Archivable
