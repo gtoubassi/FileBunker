@@ -2,6 +2,8 @@
 Identify a gmail account for testing.  Preferably you would delete all emails from that account (everything in "all mail", and trash).
 
 cp -r testing/samplefiles to testing/files
+rm -rf testing/files/CVS testing/files/subdir/CVS
+
 
 Unconfigured FileBunker
 =======================
@@ -56,6 +58,10 @@ Restore the file again to the same location, but this time let it run to complet
 Incremental Single File Backup and File History
 ===============================================
 
+Now attempt to backup file/file1.txt.  It should say that no files are in need of backup.
+
+In a shell, touch file/file1.txt, and attempt a backup.  Again, no files should be backed up.
+
 In a shell, 'echo "Version 2" >> file1.txt'
 
 In the backup tab, select the file and click "backup".  The file should be backed up.  Verify that two new files appear in your gmail account (remember to check "All Mail").
@@ -67,6 +73,8 @@ Go to the restore tab and verify that you see a combo box in the upper right of 
     Show files up to (first backup date).
 
 The most recent backup date (the first one in the list) should be selected.  NOT "show all files ever backed up".
+
+The "Versions" column of the restore table should show "2" for file1.txt.
 
 
 Restoring Multiple Versions of a Single File
@@ -118,7 +126,7 @@ In the backup tab, backup the files directory again.  2 new messages will appear
 
 Now go to the restore tab and verify that the most recent date is selected in the combobox.  Verify that fileordir is presented as a directory, with fileordir/subsubfile.txt inside.  Also verify that subdir/subfile2.txt is not there.
 
-Now select "Show all files ever backed up" in the combobox.  Now there should be two fileordir, one a file, and one a dir.  Also, subdir/subfile2.txt should be back.
+Now select "Show all files ever backed up" in the combobox.  Now there should be two fileordir, one a file, and one a directory.  Also, subdir/subfile2.txt should be back.
 
 Now go back to the second to most recent date in the combobox.  Now fileordir should appear once, as a file.  Also, subdir/subfile2.txt should not be there.
 
@@ -175,7 +183,9 @@ Large Files
 
 Find a file that is large enough to require splitting (after compression).  A file that is over 10mb when compressed (with gzip) will do.  Backup that file.  Confirm that a multiple messages appear in your gmail account (each part has a [n] at the end of the subject where n is the part number).
 
-Make sure you can restore that file.
+Copy the file, and backup the copy.  The file should not actually be sent, just the index (it should be very fast).
+
+Make sure you can restore both files, and that the contents are correct.
 
 
 Deleting an Email Repository
