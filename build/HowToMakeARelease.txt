@@ -1,0 +1,15 @@
+
+* Make sure everything is checked in.
+* run mkrelease on windows.
+* Test using Testplan.txt in testplan directory.
+* Run mkrelease on linux.  Do quick smoke test.
+* Make labels for FileBunker, and JavaLaunch (if necessary).  Can checkout by doing:
+	cvs -d:ext:gtoubassi@cvs.sf.net:/cvsroot/filebunker checkout FileBunker
+
+	cvs -q tag release_0_96
+
+
+* upload src/zip/bz2 to upload.sourceforge.net
+* Go to file release system.
+
+How to update website shell.sourceforge.net, /home/groups/f/fi/filebunker/htdocs
