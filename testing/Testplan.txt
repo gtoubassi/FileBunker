@@ -12,7 +12,7 @@ Start with an unconfigured FileBunker (meaning the configPath points to an empty
 
 Run FileBunker and confirm that the Backup tab shows the file explorer.  The restore tab should be blank.
 
-The Backup button on the backup tab should be disabled.  Navigate to a file in the explorer, and check it.  The backup button should be enabled.  Click the backup button.  You should be presented with a dialog prompting you to configure FileBunker.
+The Backup and Preview buttons on the backup tab should be disabled.  Navigate to a file in the explorer, and check it.  The Backup and Preview buttons should be enabled.  Click the Backup button.  You should be presented with a dialog prompting you to configure FileBunker.
 
 
 Configuration
@@ -28,7 +28,7 @@ After configuring the application, within 10 seconds the total size of the gmail
 Cancel a Backup
 ===============
 
-First, backup file/file1.txt.  Cancel the backup operation while it is backing up (not while it is scanning).  Wait a minute and log into your gmail account and see if any FileBunker emails were sent.  Make sure to check "All Mail" for the files as they may have been moved from the inbox.  No emails should be seen.
+First, backup files/file1.txt.  Cancel the backup operation while it is backing up (not while it is scanning).  Wait a minute and log into your gmail account and see if any FileBunker emails were sent.  Make sure to check "All Mail" for the files as they may have been moved from the inbox.  No emails should be seen.
 
 Go to the restore tab.  It still should be blank.
 
@@ -115,7 +115,7 @@ In a shell in subdir:
     echo "Version 2" >> subfile1.txt
     echo "fileordir" > fileordir
 
-In the backup tab, backup the files directory again.  3 new messages will appear in your gmail account (grand total of 11 now).
+In the backup tab, perform a backup preview.  It should report that 2 files are in need of backup.  Click the "Backup Now" button to backup these files.  3 new messages will appear in your gmail account (grand total of 11 now).
 
 In a shell in subdir:
     rm fileordir
