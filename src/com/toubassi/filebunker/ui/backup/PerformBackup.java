@@ -78,12 +78,12 @@ public class PerformBackup implements IRunnableWithProgress
 
     public void run(IProgressMonitor monitor) throws InterruptedException, InvocationTargetException
     {
-        monitor.beginTask("Preparing for backup", 1000);
+        monitor.beginTask(isPreview ? "Preparing backup preview" : "Preparing for backup", 1000);
 
         try {
             estimate = vault.estimateBackup(spec, new BackupEstimateListener(monitor));
 
-            if (estimate.numberOfDirtyFiles() > 0) {
+            if (!isPreview && estimate.numberOfDirtyFiles() > 0) {
                 
 	            // Lets be conservative since this is an estimate based on past
 	            // compression performance
@@ -100,8 +100,8 @@ public class PerformBackup implements IRunnableWithProgress
 	                estimatedSize = highEstimate;
 	            }
 	            
-	            long available = vault.availableBytes();
-	            
+                long available = vault.availableBytes();
+	                
 	            if (estimatedSize > available) {
 	                long amountNeeded = estimatedSize - available;
 	
@@ -111,7 +111,7 @@ public class PerformBackup implements IRunnableWithProgress
 	                    throw new InsufficientSpaceException();
 	                }
 	            }
-	            
+
 	            monitor.setTaskName("Backing up files");
 	            vault.backup(spec, new BackupListener(monitor, vault, estimate.totalSize()), result);
             }

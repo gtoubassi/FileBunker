@@ -184,7 +184,7 @@ public class BackupController implements NotificationListener, XMLSerializable
         FormData profileFormData = new FormData();
         profileFormData.top = new FormAttachment(0, 5);
         profileFormData.left = new FormAttachment(0, 5);
-        profileFormData.right = new FormAttachment(100, -200);
+        profileFormData.right = new FormAttachment(100, -285);
         profileFormData.bottom = new FormAttachment(100, -5);
         
         backupSpecificationText.setLayoutData(profileFormData);
@@ -196,10 +196,10 @@ public class BackupController implements NotificationListener, XMLSerializable
 
         FormData filtersButtonFormData = new FormData();
         filtersButtonFormData.top = new FormAttachment(0, 10);
-        filtersButtonFormData.left = new FormAttachment(100, -185);
-        filtersButtonFormData.right = new FormAttachment(100, -100);
-        //filtersButtonFormData.left = new FormAttachment(100, -280);
-        //filtersButtonFormData.right = new FormAttachment(100, -195);
+        //filtersButtonFormData.left = new FormAttachment(100, -185);
+        //filtersButtonFormData.right = new FormAttachment(100, -100);
+        filtersButtonFormData.left = new FormAttachment(100, -280);
+        filtersButtonFormData.right = new FormAttachment(100, -195);
         filtersButtonFormData.bottom = new FormAttachment(100, -10);
         
         filtersButton.setLayoutData(filtersButtonFormData);
@@ -214,7 +214,6 @@ public class BackupController implements NotificationListener, XMLSerializable
         });
         
         // Preview button
-        /* Not currently implemented
         previewButton = new Button(controlPanelComposite, SWT.NONE);
         previewButton.setText("Preview...");
 
@@ -284,21 +283,19 @@ public class BackupController implements NotificationListener, XMLSerializable
     
     private void previewClicked()
     {
-        performPreviewOrBackup(true);
+        performPreview();
     }
 
     private void backupClicked()
     {
-        performPreviewOrBackup(false);
+        performBackup();
     }
 
-    private void performPreviewOrBackup(boolean isPreview)
+    private void performBackup()
     {
         Shell shell = getShell();
 
-        // XXX show this prompt if the user chooses to do a backup from
-        // a preview without first configuring.  This needs to move then.
-        if (!isPreview && !vault.isConfigured()) {
+        if (!vault.isConfigured()) {
             
             String[] buttons = new String[] {"Configure", "Cancel"};
             
@@ -317,7 +314,7 @@ public class BackupController implements NotificationListener, XMLSerializable
         }
         
         BackupResult result = new BackupResult();
-        PerformBackup performBackup = new PerformBackup(vault, backupSpec, result, isPreview);
+        PerformBackup performBackup = new PerformBackup(vault, backupSpec, result, false);
         
         try {
             new ProgressMonitorDialog(shell).run(true, true, performBackup);
@@ -333,14 +330,14 @@ public class BackupController implements NotificationListener, XMLSerializable
 
         }
         catch (InvocationTargetException e) {
-            handleException(e, result, performBackup.estimate());
+            handleBackupException(e, result, performBackup.estimate());
         }
         catch (InterruptedException e) {
-            handleException(e, result, performBackup.estimate());
+            handleBackupException(e, result, performBackup.estimate());
         }
     }
     
-    private void handleException(Exception e, BackupResult result, BackupEstimate estimate)
+    private void handleBackupException(Exception e, BackupResult result, BackupEstimate estimate)
     {
         Log.log(e);
         
@@ -432,6 +429,53 @@ public class BackupController implements NotificationListener, XMLSerializable
         }
     }
     
+    private void performPreview()
+    {
+        boolean backupNow = false;
+        Shell shell = getShell();
+
+        PerformBackup performBackup = new PerformBackup(vault, backupSpec, null, true);
+        
+        try {
+            new ProgressMonitorDialog(shell).run(true, true, performBackup);
+            
+            BackupEstimate estimate = performBackup.estimate();
+            if (estimate.numberOfDirtyFiles() == 0) {
+                MessageDialog.openInformation(shell, "Backup Preview", "No files are in need of backup.");
+            }
+            else {
+                backupNow = (new PreviewDialog(shell, performBackup.estimate())).run();
+            }
+        }
+        catch (InvocationTargetException e) {
+            handlePreviewException(e);
+        }
+        catch (InterruptedException e) {
+            handlePreviewException(e);
+        }
+
+        if (backupNow) {
+            performBackup();
+        }
+    }
+    
+    private void handlePreviewException(Exception e)
+    {
+        Log.log(e);
+        
+        VaultException vaultException = VaultException.extract(e);
+        
+        if (vaultException instanceof OperationCanceledVaultException) {
+            String message = "The preview was canceled.";
+            MessageDialog.openInformation(getShell(), "Preview Canceled", message);                
+        }
+        else {
+            Log.log(e);
+
+            MessageDialog.openError(getShell(), "Preview Error", "An error occurred while performing the backup preview.");
+        }
+    }
+
     private String formatBackupResultMessage(BackupResult result, BackupEstimate estimate, boolean aborted)
     {
         StringBuffer buffer = new StringBuffer();

@@ -41,10 +41,23 @@ public class BackupEstimate implements FileFindDelegate
     private HashMap estimatesByType;
     private BackupDatabase backupdb;
     private FileOperationListener listener;
-    private int numberOfDirtyFiles;
     private long totalSize;
     private long estimatedBackupSize;
     private ArrayList dirtyFiles;
+    
+    public class DirtyFile
+    {
+        public File file;
+        public long size;
+        public long estimatedBackupSize;
+        
+        public DirtyFile(File file, long size, long estimatedBackupSize)
+        {
+            this.file = file;
+            this.size = size;
+            this.estimatedBackupSize = estimatedBackupSize;
+        }
+    }
     
     public BackupEstimate(FileOperationListener listener, BackupDatabase backupdb)
     {
@@ -60,7 +73,6 @@ public class BackupEstimate implements FileFindDelegate
         
         long size = file.length();
 
-        numberOfDirtyFiles++;
         totalSize += size;
 
         FileRevision revision = backupdb.findLastFileRevision(file);
@@ -94,25 +106,12 @@ public class BackupEstimate implements FileFindDelegate
     
     public int numberOfDirtyFiles()
     {
-        return numberOfDirtyFiles;
+        return dirtyFiles.size();
     }
     
-    public File dirtyFileAt(int index)
+    public ArrayList dirtyFiles()
     {
-        DirtyFile dirtyFile = (DirtyFile)dirtyFiles.get(index);
-        return dirtyFile.file;
-    }
-    
-    public long dirtyFileSizeAt(int index)
-    {
-        DirtyFile dirtyFile = (DirtyFile)dirtyFiles.get(index);
-        return dirtyFile.size;
-    }
-    
-    public long estimatedDirtyFileBackupSizeAt(int index)
-    {
-        DirtyFile dirtyFile = (DirtyFile)dirtyFiles.get(index);
-        return dirtyFile.estimatedBackupSize;
+        return dirtyFiles;
     }
     
     public long totalSize()
@@ -149,22 +148,8 @@ public class BackupEstimate implements FileFindDelegate
 	
     public String toString()
     {
-		return "          Number of Files: " + numberOfDirtyFiles() + "\n" +
+		return "          Number of Files: " + dirtyFiles.size() + "\n" +
 		       "              Total Bytes: " + totalSize() + "\n" +
 		       "Estimated Backed Up Bytes: " + estimatedBackupSize() + "\n";
-    }
-}
-
-class DirtyFile
-{
-    public File file;
-    public long size;
-    public long estimatedBackupSize;
-    
-    public DirtyFile(File file, long size, long estimatedBackupSize)
-    {
-        this.file = file;
-        this.size = size;
-        this.estimatedBackupSize = estimatedBackupSize;
     }
 }
