@@ -23,41 +23,38 @@ THE SOFTWARE.
 */
 package com.toubassi.filebunker.vault;
 
-import com.meterware.httpunit.WebClient;
-import com.meterware.httpunit.WebClientListener;
-import com.meterware.httpunit.WebRequest;
-import com.meterware.httpunit.WebResponse;
-
-import java.io.IOException;
-import java.net.MalformedURLException;
+import java.io.File;
 
 /**
+ * UncancelableFileOperationListener is a "wrapper" listener that will pass
+ * on all methods to the underlying listener provided to the constructor, but
+ * will not pass back any desire to cancel that is indicated by the return
+ * values from the underlying listener.
  * @author garrick
  */
-public class DebugWebClientListener implements WebClientListener
+public class UncancelableFileOperationListener implements FileOperationListener
 {
-    public void requestSent(WebClient client, WebRequest request)
+    private FileOperationListener listener;
+    
+    public UncancelableFileOperationListener(FileOperationListener listener)
     {
-        System.out.println("Request Sent=======================");
-        try {
-            System.out.println(request.getURL());
-        }
-        catch (MalformedURLException e) {
-            e.printStackTrace();
-        }
-        System.out.println(request.getHeaders());
-        System.out.println();
+        this.listener = listener;
+    }
+    
+    public FileOperationListener listener()
+    {
+        return listener;
     }
 
-    public void responseReceived(WebClient client, WebResponse response)
+    public boolean fileProgress(File file, long bytesProcessed)
     {
-        System.out.println("Response Received=======================");
-        try {
-            System.out.println(response.getText());
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-        }
-        System.out.println();
+        listener.fileProgress(file, bytesProcessed);
+        return true;
+    }
+
+    public boolean willProcessFile(File file)
+    {
+        listener.willProcessFile(file);
+        return true;
     }
 }

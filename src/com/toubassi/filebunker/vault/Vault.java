@@ -237,7 +237,7 @@ public class Vault implements NotificationListener, XMLSerializable
     }
 
     public void backup(BackupSpecification spec,
-            BackupOperationListener listener, BackupResult result)
+            FileOperationListener listener, BackupResult result)
             throws VaultException
     {
         Date date = new Date();
@@ -248,10 +248,6 @@ public class Vault implements NotificationListener, XMLSerializable
         try {
             spec.find(backupdb, findDelegate);
 
-            if (listener != null) {
-                listener.finishedUserFiles();
-            }
-            
             // If we got here, no exception was thrown.
             exceptionThrown = false;
         }
@@ -279,7 +275,12 @@ public class Vault implements NotificationListener, XMLSerializable
                     FileDigest digest = new FileDigest(backupdb.file());
                     long size = backupdb.file().length();
                     RevisionIdentifier identifier = new RevisionIdentifier(digest, size);
-                    store.backupFile(backupdb.file(), "BackupIndex", identifier, listener);
+
+                    // Make sure the user doesn't cancel out of this.  We want to make sure
+                    // we've backed up the latest version of the backup index.  Perhaps
+                    // this is not worth it?
+                    store.backupFile(backupdb.file(), "BackupIndex", identifier,
+                            new UncancelableFileOperationListener(listener));
                 }
             }
             catch (VaultException e) {
@@ -310,7 +311,7 @@ public class Vault implements NotificationListener, XMLSerializable
     {
         try {
             // Skip the configuration files.
-            if (isHidden(revision.node().file())) {
+            if (isConfigurationFile(revision.node().file())) {
                 return;
             }
 
@@ -480,7 +481,7 @@ public class Vault implements NotificationListener, XMLSerializable
         file = file.getCanonicalFile();
 
         // Skip configuration files.
-        if (isHidden(file)) {
+        if (isConfigurationFile(file)) {
             return;
         }
 
@@ -608,10 +609,10 @@ public class Vault implements NotificationListener, XMLSerializable
      * Returns true if the specified file should be ignored
      * for purposes of backup and restore.
      */
-    private boolean isHidden(File file)
+    public boolean isConfigurationFile(File file)
     {
-        boolean isHidden = FileUtil.isAncestor(configDirectory, file);
-        return isHidden;
+        boolean isConfig = FileUtil.isAncestor(configDirectory, file);
+        return isConfig;
     }
 
     public void handleNotification(String notification, Object sender,
@@ -733,7 +734,7 @@ public class Vault implements NotificationListener, XMLSerializable
             try {
                 // We skip the configuration files.  The database.xml file
                 // is handled separately.
-                if (!isHidden(file)) {
+                if (!isConfigurationFile(file)) {
 
                     FileRevision revision = backupFile(file, date, listener);
 

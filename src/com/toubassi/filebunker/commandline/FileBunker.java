@@ -28,10 +28,10 @@ THE SOFTWARE.
 package com.toubassi.filebunker.commandline;
 
 import com.toubassi.filebunker.vault.BackupEstimate;
-import com.toubassi.filebunker.vault.BackupOperationListener;
 import com.toubassi.filebunker.vault.BackupResult;
 import com.toubassi.filebunker.vault.BackupSpecification;
 import com.toubassi.filebunker.vault.DirectoryRevision;
+import com.toubassi.filebunker.vault.FileOperationListener;
 import com.toubassi.filebunker.vault.FileRevision;
 import com.toubassi.filebunker.vault.FileStoreUtil;
 import com.toubassi.filebunker.vault.InvalidVaultPasswordException;
@@ -289,7 +289,7 @@ public class FileBunker
 	}
 }
 
-class GenericFileOperationListener implements BackupOperationListener
+class GenericFileOperationListener implements FileOperationListener
 {
     private int count;
     
@@ -303,9 +303,5 @@ class GenericFileOperationListener implements BackupOperationListener
     {
         System.out.println(file.getPath());
         return true;
-    }
-
-    public void finishedUserFiles()
-    {
     }
 }

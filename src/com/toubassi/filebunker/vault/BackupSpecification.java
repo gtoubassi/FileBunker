@@ -33,6 +33,7 @@ import com.toubassi.io.XMLSerializable;
 import com.toubassi.io.XMLSerializer;
 import com.toubassi.util.FileFind;
 import com.toubassi.util.FileFindDelegate;
+import com.toubassi.util.Glob;
 
 import java.io.File;
 import java.io.IOException;
@@ -52,6 +53,9 @@ public class BackupSpecification implements XMLSerializable
     
     private ArrayList includedFiles = new ArrayList();
     private ArrayList excludedFiles = new ArrayList();
+    private ArrayList excludedFileGlobs = new ArrayList();
+    private ArrayList excludedDirectoryGlobs = new ArrayList();
+    private long excludedFileSize = 0;
     private boolean isIncremental = true;
     
     public ArrayList roots()
@@ -78,7 +82,7 @@ public class BackupSpecification implements XMLSerializable
     {
         removePathAndDescendants(file, excludedFiles);
 
-        if (!containsFile(file)) {
+        if (!containsFile(file, false)) {
             removePathAndDescendants(file, includedFiles);        
             includedFiles.add(file);                    
         }
@@ -91,7 +95,7 @@ public class BackupSpecification implements XMLSerializable
         removePathAndDescendants(file, includedFiles);
         removePathAndDescendants(file, excludedFiles);        
 
-        if (containsFile(file)) {
+        if (containsFile(file, false)) {
             excludedFiles.add(file);                    
         }
         
@@ -100,6 +104,11 @@ public class BackupSpecification implements XMLSerializable
     
     public boolean containsFile(File file)
     {
+        return containsFile(file, true);
+    }
+    
+    public boolean containsFile(File file, boolean applyExclusionFilters)
+    {
         File nearestIncludedAncestor = nearestAncestor(file, includedFiles);
         File nearestExcludedAncestor = nearestAncestor(file, excludedFiles);
         
@@ -107,11 +116,13 @@ public class BackupSpecification implements XMLSerializable
            (nearestExcludedAncestor == null ||
             nearestIncludedAncestor.getPath().length() > nearestExcludedAncestor.getPath().length()))
         {
-            return true;
+            if (!applyExclusionFilters || !isExcluded(file)) {
+                return true;
+            }
         }
         return false;
     }
-    
+
     public ArrayList includedFiles()
     {
         return includedFiles;
@@ -120,6 +131,71 @@ public class BackupSpecification implements XMLSerializable
     public ArrayList excludedFiles()
     {
         return excludedFiles;
+    }
+    
+    public void removeAllExcludedFileGlobs()
+    {
+        excludedFileGlobs.clear();
+    }
+    
+    public void addExcludedFileGlob(Glob glob)
+    {
+        excludedFileGlobs.add(glob);
+    }
+    
+    public void removeAllExcludedDirectoryGlobs()
+    {
+        excludedDirectoryGlobs.clear();
+    }
+    
+    public void addExcludedDirectoryGlob(Glob glob)
+    {
+        excludedDirectoryGlobs.add(glob);
+    }
+    
+    public ArrayList excludedFileGlobs()
+    {
+        return excludedFileGlobs;
+    }
+    
+    public ArrayList excludedDirectoryGlobs()
+    {
+        return excludedDirectoryGlobs;
+    }
+    
+    /**
+     * Files whose size is greater than the specified size are
+     * skipped.  0 means no files are skipped based on size.
+     */
+    public void setExcludedFileSize(long size)
+    {
+        excludedFileSize = size;
+    }
+    
+    public long excludedFileSize()
+    {
+        return excludedFileSize;
+    }
+    
+    private boolean isExcluded(File file)
+    {
+        boolean isDirectory = file.isDirectory();
+        ArrayList globs = isDirectory ? excludedDirectoryGlobs : excludedFileGlobs;
+        String name = file.getName();
+        
+        for (int i = 0, count = globs.size(); i < count; i++) {
+            Glob glob = (Glob)globs.get(i);
+                        
+            if (glob.matches(name)) {
+                return true;
+            }
+        }
+        
+        if (!isDirectory && excludedFileSize != 0 && file.length() > excludedFileSize) {
+            return true;
+        }
+        
+        return false;
     }
     
     /**
@@ -219,6 +295,20 @@ public class BackupSpecification implements XMLSerializable
             writer.write("excluded", file.getPath());            
         }
         
+        for (int i = 0; i < excludedFileGlobs.size(); i++) {
+            Glob glob = (Glob)excludedFileGlobs.get(i);
+            writer.write("excludedFileGlob", glob.globExpression());            
+        }
+
+        for (int i = 0; i < excludedDirectoryGlobs.size(); i++) {
+            Glob glob = (Glob)excludedDirectoryGlobs.get(i);
+            writer.write("excludedDirectoryGlob", glob.globExpression());            
+        }
+
+        if (excludedFileSize > 0) {
+            writer.write("excludedFileSize", Long.toString(excludedFileSize));
+        }
+        
         writer.pop();
     }
     
@@ -241,6 +331,15 @@ public class BackupSpecification implements XMLSerializable
         }
         else if ("excluded".equals(container)) {
             excludedFiles.add(new File(value));
+        }
+        else if ("excludedFileGlob".equals(container)) {
+            excludedFileGlobs.add(new Glob(value));
+        }
+        else if ("excludedDirectoryGlob".equals(container)) {
+            excludedDirectoryGlobs.add(new Glob(value));
+        }
+        else if ("excludedFileSize".equals(container)) {
+            excludedFileSize = Long.parseLong(value);
         }
         return null;
     }

@@ -126,7 +126,7 @@ public class BackupTreeContentProvider implements ICheckboxTreeContentProvider
     
     public boolean isChecked(Object element)
     {
-        return backupSpec.containsFile((File)element);
+        return backupSpec.containsFile((File)element, false);
     }
 
     public void setCheckedState(Object element, boolean checked)

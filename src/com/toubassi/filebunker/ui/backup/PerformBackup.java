@@ -29,7 +29,6 @@ package com.toubassi.filebunker.ui.backup;
 
 import com.toubassi.filebunker.ui.FileProgressMonitorListener;
 import com.toubassi.filebunker.vault.BackupEstimate;
-import com.toubassi.filebunker.vault.BackupOperationListener;
 import com.toubassi.filebunker.vault.BackupResult;
 import com.toubassi.filebunker.vault.BackupSpecification;
 import com.toubassi.filebunker.vault.FileOperationListener;
@@ -112,7 +111,7 @@ public class PerformBackup implements IRunnableWithProgress
 	            }
 	            
 	            monitor.setTaskName("Backing up files");
-	            vault.backup(spec, new BackupListener(monitor, estimate.totalSize()), result);
+	            vault.backup(spec, new BackupListener(monitor, vault, estimate.totalSize()), result);
             }
             
             monitor.done();
@@ -205,17 +204,17 @@ class RecoverBytesListener implements FileOperationListener
 }
 
 
-class BackupListener extends FileProgressMonitorListener implements BackupOperationListener
+class BackupListener extends FileProgressMonitorListener implements FileOperationListener
 {
     private long estimatedSize;
     private Vault vault;
     private Date date;
     private RestoreEstimate estimate;
-    private boolean finished;
         
-    public BackupListener(IProgressMonitor monitor, long estimatedSize)
+    public BackupListener(IProgressMonitor monitor, Vault vault, long estimatedSize)
     {
         super(monitor);
+        this.vault = vault;
         this.estimatedSize = estimatedSize;
     }
     
@@ -231,21 +230,16 @@ class BackupListener extends FileProgressMonitorListener implements BackupOperat
 
     protected void appendOperationMessageForFile(File file, StringBuffer buffer)
     {
-        if (!finished) {
-            super.appendOperationMessageForFile(file, buffer);
+        if (vault.isConfigurationFile(file)) {
+            buffer.append("Finishing... ");            
         }
         else {
-            buffer.append("Finishing... ");
+            super.appendOperationMessageForFile(file, buffer);
         }
     }
     
     protected long bytesToProcessForFile(File file)
     {
         return file.length();
-    }
-    
-    public void finishedUserFiles()
-    {
-        finished = true;
     }
 }

@@ -66,7 +66,8 @@ import org.eclipse.swt.custom.SashForm;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.graphics.Font;
+import org.eclipse.swt.graphics.FontData;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.FormAttachment;
 import org.eclipse.swt.layout.FormData;
@@ -97,6 +98,7 @@ public class BackupController implements NotificationListener, XMLSerializable
     private Explorer explorer;
     private SpecificationDescriptionController specificationController;
     private Button backupButton;
+    private Button filtersButton;
     private SashForm sash;
     
     public BackupController(File configDirectory, Action configurationAction)
@@ -181,17 +183,41 @@ public class BackupController implements NotificationListener, XMLSerializable
         FormData profileFormData = new FormData();
         profileFormData.top = new FormAttachment(0, 5);
         profileFormData.left = new FormAttachment(0, 5);
-        profileFormData.right = new FormAttachment(100, -100);
+        profileFormData.right = new FormAttachment(100, -200);
         profileFormData.bottom = new FormAttachment(100, -5);
         
         backupSpecificationText.setLayoutData(profileFormData);
+
+        // Filters button
+        
+        filtersButton = new Button(controlPanelComposite, SWT.NONE);
+        filtersButton.setText("Filters...");
+
+        FormData filtersButtonFormData = new FormData();
+        filtersButtonFormData.top = new FormAttachment(0, 10);
+        filtersButtonFormData.left = new FormAttachment(100, -185);
+        filtersButtonFormData.right = new FormAttachment(100, -100);
+        filtersButtonFormData.bottom = new FormAttachment(100, -10);
+        
+        filtersButton.setLayoutData(filtersButtonFormData);
+        
+        filtersButton.addSelectionListener(new SelectionAdapter() {
+
+            public void widgetSelected(SelectionEvent event)
+            {
+                filtersClicked();
+            }
+
+        });
 
         // Backup button
         
         backupButton = new Button(controlPanelComposite, SWT.NONE);
         backupButton.setText("Backup");
-        Point backupButtonSize = backupButton.computeSize(SWT.DEFAULT, SWT.DEFAULT);
-
+        FontData fontData = backupButton.getFont().getFontData()[0];        
+        Font boldFont = new Font(parent.getDisplay(), fontData.getName(), fontData.getHeight(), SWT.BOLD);
+        backupButton.setFont(boldFont);
+        
         FormData backupButtonFormData = new FormData();
         backupButtonFormData.top = new FormAttachment(0, 10);
         backupButtonFormData.left = new FormAttachment(100, -90);
@@ -218,6 +244,11 @@ public class BackupController implements NotificationListener, XMLSerializable
     private void updateBackupButton()
     {
         backupButton.setEnabled(!backupSpec.isEmpty());        
+    }
+    
+    private void filtersClicked()
+    {
+        new FiltersDialog(getShell(), backupSpec).open();
     }
     
     private void backupClicked()
