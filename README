@@ -7,15 +7,41 @@ Welcome to the source release of FileBunker.  FileBunker is a file backup
 application which uses one or more GMail accounts as a free, offsite backup
 repository.
 
-The source code for file bunker is located in the src directory.  In order
+Compiling FileBunker
+--------------------
+
+The source code for FileBunker is located in the src directory.  In order
 to build FileBunker you will need the libraries that FileBunker depends on.
 The easiest way to get these libraries is to download the binary release
 for your development platform, and copy the FileBunker/Resources/lib
-directory from that release into your source directory (as a peer to lib).
-Note there is no make or ant file yet.
+directory from that release into your source directory (lib should be a peer
+to src).  Note there is no make or ant file yet.
 
-When running FileBunker make sure to pass -Djava.library.path=lib/<platform>
-in order to be able to link against the SWT native libraries.
+You will also need to make sure the compiler compliance is setup to allow
+the assert keyword to be used.  For instance in eclipse, go to
+Project->Properties->Java Compiler->Compliance and Classfiles and set the
+source and classfile compliance level to 1.4.
+
+Running FileBunker
+------------------
+
+The main class for the SWT GUI frontend to FileBunker is
+com.toubassi.filebunker.ui.FileBunker.  The command line version is
+com.toubassi.filebunker.commandline.FileBunker.
+
+When running FileBunker make sure to pass the vm the argument
+-Djava.library.path=lib/<platform> in order to be able to link against the
+SWT native libraries.
+
+Also make sure to pass a -config <directory> to specify the directory that
+FileBunker will use to record configuration information.  Note that the
+releases of FileBunker use the following directories:
+
+	windows: c:\Documents and Settings\<username>\Local Settings\
+				Application Data\FileBunker\default.bunker
+
+	linux: ~/FileBunker/Default.bunker
+
 
 
 For more information visit http://filebunker.sourceforge.net.
