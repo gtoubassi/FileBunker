@@ -99,6 +99,7 @@ public class BackupController implements NotificationListener, XMLSerializable
     private SpecificationDescriptionController specificationController;
     private Button backupButton;
     private Button filtersButton;
+    private Button previewButton;
     private SashForm sash;
     
     public BackupController(File configDirectory, Action configurationAction)
@@ -197,6 +198,8 @@ public class BackupController implements NotificationListener, XMLSerializable
         filtersButtonFormData.top = new FormAttachment(0, 10);
         filtersButtonFormData.left = new FormAttachment(100, -185);
         filtersButtonFormData.right = new FormAttachment(100, -100);
+        //filtersButtonFormData.left = new FormAttachment(100, -280);
+        //filtersButtonFormData.right = new FormAttachment(100, -195);
         filtersButtonFormData.bottom = new FormAttachment(100, -10);
         
         filtersButton.setLayoutData(filtersButtonFormData);
@@ -209,7 +212,30 @@ public class BackupController implements NotificationListener, XMLSerializable
             }
 
         });
+        
+        // Preview button
+        /* Not currently implemented
+        previewButton = new Button(controlPanelComposite, SWT.NONE);
+        previewButton.setText("Preview...");
 
+        FormData previewButtonFormData = new FormData();
+        previewButtonFormData.top = new FormAttachment(0, 10);
+        previewButtonFormData.left = new FormAttachment(100, -185);
+        previewButtonFormData.right = new FormAttachment(100, -100);
+        previewButtonFormData.bottom = new FormAttachment(100, -10);
+        
+        previewButton.setLayoutData(previewButtonFormData);
+        
+        previewButton.addSelectionListener(new SelectionAdapter() {
+
+            public void widgetSelected(SelectionEvent event)
+            {
+                previewClicked();
+            }
+
+        });
+        /**/
+        
         // Backup button
         
         backupButton = new Button(controlPanelComposite, SWT.NONE);
@@ -238,12 +264,17 @@ public class BackupController implements NotificationListener, XMLSerializable
         int[] topSashWeights = new int[] {85, 15};
         sash.setWeights(topSashWeights);
 
-        updateBackupButton();        
+        updateButtons();        
     }
 
-    private void updateBackupButton()
+    private void updateButtons()
     {
-        backupButton.setEnabled(!backupSpec.isEmpty());        
+        boolean canBackup = !backupSpec.isEmpty();
+
+        backupButton.setEnabled(canBackup);        
+        if (previewButton != null) {
+            previewButton.setEnabled(canBackup);        
+        }
     }
     
     private void filtersClicked()
@@ -251,11 +282,23 @@ public class BackupController implements NotificationListener, XMLSerializable
         new FiltersDialog(getShell(), backupSpec).open();
     }
     
+    private void previewClicked()
+    {
+        performPreviewOrBackup(true);
+    }
+
     private void backupClicked()
     {
+        performPreviewOrBackup(false);
+    }
+
+    private void performPreviewOrBackup(boolean isPreview)
+    {
         Shell shell = getShell();
-        
-        if (!vault.isConfigured()) {
+
+        // XXX show this prompt if the user chooses to do a backup from
+        // a preview without first configuring.  This needs to move then.
+        if (!isPreview && !vault.isConfigured()) {
             
             String[] buttons = new String[] {"Configure", "Cancel"};
             
@@ -274,7 +317,7 @@ public class BackupController implements NotificationListener, XMLSerializable
         }
         
         BackupResult result = new BackupResult();
-        PerformBackup performBackup = new PerformBackup(vault, backupSpec, result);
+        PerformBackup performBackup = new PerformBackup(vault, backupSpec, result, isPreview);
         
         try {
             new ProgressMonitorDialog(shell).run(true, true, performBackup);
@@ -404,7 +447,7 @@ public class BackupController implements NotificationListener, XMLSerializable
         buffer.append(result.numberOfFiles());
         if (aborted && estimate != null) {
             buffer.append(" of ");
-            buffer.append(estimate.numberOfFiles());
+            buffer.append(estimate.numberOfDirtyFiles());
         }
         buffer.append(singular ? " file " : " files ");
         buffer.append("totaling ");
@@ -446,7 +489,7 @@ public class BackupController implements NotificationListener, XMLSerializable
     public void handleNotification(String notification, Object sender, Object argument)
     {
         if (sender == backupSpec && BackupSpecification.ChangedNotification.equals(notification)) {
-            updateBackupButton();
+            updateButtons();
         }
     }
     

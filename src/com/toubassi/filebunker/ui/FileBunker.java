@@ -170,9 +170,9 @@ public class FileBunker extends ApplicationWindow implements Window.IExceptionHa
         NotificationCenter.sharedCenter().register(vault, this);
 
         /*
-        // For testing character image authentication.  Comment out the
+        // For testing character image authentication captcha.  Comment out the
         // call to checkInWebConversation in GMailFileStore.cleanupInbox.
-        for (int i = 0; i < 20; i++) {
+        for (int i = 0; i < 100; i++) {
             System.out.println("Attempt " + i);
             try {
                 vault.performMaintenance();

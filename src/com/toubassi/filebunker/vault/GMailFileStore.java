@@ -31,15 +31,10 @@ import com.meterware.httpunit.HttpUnitOptions;
 import com.meterware.httpunit.PostMethodWebRequest;
 import com.meterware.httpunit.WebConversation;
 import com.meterware.httpunit.WebForm;
-import com.meterware.httpunit.WebImage;
-import com.meterware.httpunit.WebLink;
-import com.meterware.httpunit.WebRequest;
 import com.meterware.httpunit.WebResponse;
-import com.subx.common.NotificationCenter;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
 import java.net.URLEncoder;
 import java.util.Date;
 import java.util.HashMap;
@@ -96,8 +91,31 @@ public class GMailFileStore extends WebMailFileStore
 			loginForm.setParameter("Passwd", accountPassword());
 			wr = loginForm.submit();
 			
-			WebLink link = wr.getLinkWith("click here to continue");
+			// gtoubassi 4/1/05
+			// We want to just do wc.getResponse(wr.getRefreshRequest()), but
+			// httpunit has a bug whereby it mishandles refresh urls with query params
+			// (sometimes).  See httpunit bug 1175246 or:
+			// http://sourceforge.net/tracker/index.php?func=detail&aid=1175246&group_id=6550&atid=106550
 			
+			String refreshHeaders[] = wr.getMetaTagContent("http-equiv", "refresh");//wr.getHeaderField("Refresh");
+			if (refreshHeaders != null && refreshHeaders.length > 0) {
+			    String refreshHeader = refreshHeaders[0];
+			    int firstEquals = refreshHeader.indexOf("=");
+			    if (firstEquals != -1) {
+			        String url = refreshHeader.substring(firstEquals + 1);
+			        
+			        if (url.length() > 0) {
+			            wr = wc.getResponse(url);
+			        }
+			    }
+			}
+
+			/*
+			
+			This was for back when they would randomly throw up a captcha.
+			They may still do it, but since the login sequence changed, I don't
+			know where it comes up and I can't repro (see the captcha comment in FileBunker.java)
+			 
 			while (link == null) {
 			    
 			    // We are probably being asked to provide characters in an image,
@@ -152,6 +170,8 @@ public class GMailFileStore extends WebMailFileStore
 				wc.setAutoloadSubframes(true);		        
 		    }
 		    
+			*/
+
 			if (wr.getResponseCode() != 200) {
 			    throw new FailedLoginException("Failed to connect to gmail account " + email(), this);
 			}

@@ -66,12 +66,14 @@ public class PerformBackup implements IRunnableWithProgress
     private BackupSpecification spec;
     private BackupResult result;
     private BackupEstimate estimate;
+    private boolean isPreview;
     
-    public PerformBackup(Vault vault, BackupSpecification spec, BackupResult result)
+    public PerformBackup(Vault vault, BackupSpecification spec, BackupResult result, boolean isPreview)
     {
         this.vault = vault;
         this.spec = spec;
         this.result = result;
+        this.isPreview = isPreview;
     }
 
     public void run(IProgressMonitor monitor) throws InterruptedException, InvocationTargetException
@@ -81,7 +83,7 @@ public class PerformBackup implements IRunnableWithProgress
         try {
             estimate = vault.estimateBackup(spec, new BackupEstimateListener(monitor));
 
-            if (estimate.numberOfFiles() > 0) {
+            if (estimate.numberOfDirtyFiles() > 0) {
                 
 	            // Lets be conservative since this is an estimate based on past
 	            // compression performance
@@ -92,7 +94,7 @@ public class PerformBackup implements IRunnableWithProgress
 	            // may split into many messages and require much more for headers.  Really
 	            // we need to delegate this kind of calculation to the store since only it
 	            // knows how much overhead per byte or file is needed.
-	            long highEstimate = estimate.totalSize() + 2048 * estimate.numberOfFiles();
+	            long highEstimate = estimate.totalSize() + 2048 * estimate.numberOfDirtyFiles();
 	            
 	            if (estimatedSize > highEstimate) {
 	                estimatedSize = highEstimate;

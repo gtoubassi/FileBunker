@@ -30,6 +30,7 @@ package com.toubassi.filebunker.vault;
 import com.toubassi.util.FileFindDelegate;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashMap;
 
 /**
@@ -40,15 +41,17 @@ public class BackupEstimate implements FileFindDelegate
     private HashMap estimatesByType;
     private BackupDatabase backupdb;
     private FileOperationListener listener;
-    private int numberOfFiles;
+    private int numberOfDirtyFiles;
     private long totalSize;
     private long estimatedBackupSize;
+    private ArrayList dirtyFiles;
     
     public BackupEstimate(FileOperationListener listener, BackupDatabase backupdb)
     {
         this.backupdb = backupdb;
         this.listener = listener;
         estimatesByType = new HashMap();
+        dirtyFiles = new ArrayList();
     }
     
     void addFile(File file)
@@ -57,7 +60,7 @@ public class BackupEstimate implements FileFindDelegate
         
         long size = file.length();
 
-        numberOfFiles++;
+        numberOfDirtyFiles++;
         totalSize += size;
 
         FileRevision revision = backupdb.findLastFileRevision(file);
@@ -81,13 +84,35 @@ public class BackupEstimate implements FileFindDelegate
                 ratio = result.floatValue();                
             }
         }
+        
+        long backupSize = (long)(size * ratio);
 
-        estimatedBackupSize += size * ratio;
+        dirtyFiles.add(new DirtyFile(file, size, backupSize));
+        
+        estimatedBackupSize += backupSize;
     }
     
-    public int numberOfFiles()
+    public int numberOfDirtyFiles()
     {
-        return numberOfFiles;
+        return numberOfDirtyFiles;
+    }
+    
+    public File dirtyFileAt(int index)
+    {
+        DirtyFile dirtyFile = (DirtyFile)dirtyFiles.get(index);
+        return dirtyFile.file;
+    }
+    
+    public long dirtyFileSizeAt(int index)
+    {
+        DirtyFile dirtyFile = (DirtyFile)dirtyFiles.get(index);
+        return dirtyFile.size;
+    }
+    
+    public long estimatedDirtyFileBackupSizeAt(int index)
+    {
+        DirtyFile dirtyFile = (DirtyFile)dirtyFiles.get(index);
+        return dirtyFile.estimatedBackupSize;
     }
     
     public long totalSize()
@@ -124,8 +149,22 @@ public class BackupEstimate implements FileFindDelegate
 	
     public String toString()
     {
-		return "          Number of Files: " + numberOfFiles() + "\n" +
+		return "          Number of Files: " + numberOfDirtyFiles() + "\n" +
 		       "              Total Bytes: " + totalSize() + "\n" +
 		       "Estimated Backed Up Bytes: " + estimatedBackupSize() + "\n";
+    }
+}
+
+class DirtyFile
+{
+    public File file;
+    public long size;
+    public long estimatedBackupSize;
+    
+    public DirtyFile(File file, long size, long estimatedBackupSize)
+    {
+        this.file = file;
+        this.size = size;
+        this.estimatedBackupSize = estimatedBackupSize;
     }
 }
