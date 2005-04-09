@@ -294,8 +294,8 @@ public class GMailFileStore extends WebMailFileStore
 				throw new VaultException("Failed to match utilization pattern.");
 			}
 			
-			int usedMB = Integer.parseInt(matcher.group(1));
-			int totalMB = Integer.parseInt(matcher.group(2));
+			long usedMB = Long.parseLong(matcher.group(1));
+			long totalMB = Long.parseLong(matcher.group(2));
 			if (usedMB > .8 * totalMB) {
 			    // 10MB slop factor to make sure we don't go overfill.
 		        usedMB += 10;
@@ -303,7 +303,7 @@ public class GMailFileStore extends WebMailFileStore
 			if (usedMB >= totalMB) {
 			    return 0;
 			}
-			return (long)((totalMB - usedMB)*1024*1024);
+			return (totalMB - usedMB)*1024*1024;
 		}
 		catch (VaultException e) {
 		    throw e;
