@@ -116,7 +116,7 @@ public class GMailMultiPartInputStream extends InputStream
 	        }
 	        currentMessage++;
 	        
-			String attachmentUrl = "http://gmail.google.com/gmail?view=att&disp=inlined&attid=0.1&th=" + messageIds[currentMessage];
+			String attachmentUrl = GMailFileStore.GoogleActionBaseUrl + "?view=att&disp=inlined&attid=0.1&th=" + messageIds[currentMessage];
 			WebResponse wr = wc.getResponse(attachmentUrl);
 			
 	        if (currentInput != null) {

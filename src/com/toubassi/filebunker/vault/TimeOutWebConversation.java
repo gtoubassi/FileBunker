@@ -86,7 +86,8 @@ public class TimeOutWebConversation extends WebConversation
 	            sc.init(null, trustAllCerts, new java.security.SecureRandom());
 	            HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
 	            // This line commented out to avoid deprecated warning 
-	            // HttpsURLConnectionOldImpl.setDefaultSSLSocketFactory(sc.getSocketFactory()); 
+	            // Need this to debug with Charles.exe
+	            //com.sun.net.ssl.internal.www.protocol.https.HttpsURLConnectionOldImpl.setDefaultSSLSocketFactory(sc.getSocketFactory()); 
 	        } catch (Exception e) {
 	            e.printStackTrace();
 	        }

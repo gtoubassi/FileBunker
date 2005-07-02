@@ -141,8 +141,12 @@ public class FileBunker extends ApplicationWindow implements Window.IExceptionHa
     
     protected void didStart()
     {
-        verifyJavaRuntimeVersion(getShell());
-
+        // By default we verify the runtime, but just in case somebody knows
+        // what they are doing and wants to subvert this...
+        if (!"false".equals(System.getProperty("com.toubassi.filebunker.VerifyRuntimeVersion"))) {
+            verifyJavaRuntimeVersion(getShell());
+        }
+        
         if (Vault.needsPassword(configDirectory)) {
             if (!authenticate()) {
                 close();
@@ -193,32 +197,49 @@ public class FileBunker extends ApplicationWindow implements Window.IExceptionHa
     private void verifyJavaRuntimeVersion(Shell shell)
     {
         String version = System.getProperty("java.runtime.version");
+        
+        // Skip any leading text like "Blackdown" (see
+        // http://sourceforge.net/tracker/index.php?func=detail&aid=1181135&group_id=118802&atid=682209
+        for (int i = 0, count = version.length(); i < count; i++) {
+            char ch = version.charAt(i);
+            if (Character.isDigit(ch)) {
+                version = version.substring(i);
+                break;
+            }
+        }
+        
         StringTokenizer tokenizer = new StringTokenizer(version, "._-");
         boolean ok = false;
-        
-        if (tokenizer.hasMoreTokens()) {
-            String major = tokenizer.nextToken();
-            if (Integer.parseInt(major) > 2) {
-                ok = true;
-            }
+
+        try {
+	        if (tokenizer.hasMoreTokens()) {
+	            String major = tokenizer.nextToken();
+	            if (Integer.parseInt(major) > 2) {
+	                ok = true;
+	            }
+	        }
+	        if (!ok && tokenizer.hasMoreTokens()) {
+	            String minor = tokenizer.nextToken();
+	            if (Integer.parseInt(minor) > 4) {
+	                ok = true;
+	            }
+	        }
+	        if (!ok && tokenizer.hasMoreTokens()) {
+	            String patch = tokenizer.nextToken();
+	            if (Integer.parseInt(patch) > 2) {
+	                ok = true;
+	            }
+	        }
+	        if (!ok && tokenizer.hasMoreTokens()) {
+	            String subpatch = tokenizer.nextToken();
+	            if (Integer.parseInt(subpatch) >= 5) {
+	                ok = true;
+	            }
+	        }
         }
-        if (!ok && tokenizer.hasMoreTokens()) {
-            String minor = tokenizer.nextToken();
-            if (Integer.parseInt(minor) > 4) {
-                ok = true;
-            }
-        }
-        if (!ok && tokenizer.hasMoreTokens()) {
-            String patch = tokenizer.nextToken();
-            if (Integer.parseInt(patch) > 2) {
-                ok = true;
-            }
-        }
-        if (!ok && tokenizer.hasMoreTokens()) {
-            String subpatch = tokenizer.nextToken();
-            if (Integer.parseInt(subpatch) >= 5) {
-                ok = true;
-            }
+        catch (NumberFormatException e) {
+            Log.log(e, "Exception parsing runtime version: '" + version + "'");
+            throw e;
         }
         
         if (!ok) {

@@ -57,6 +57,10 @@ public class GMailFileStore extends WebMailFileStore
 	private static final Pattern messageIdPattern = Pattern.compile("\\[\\s*\"([^\"]+)\"");
 	private static final Pattern utilizationPattern = Pattern.compile("D\\(\\[\"qu\",\"(\\d+) MB\",\"(\\d+) MB");
 	
+	private static final String GoogleLoginUrl = System.getProperty("com.toubassi.filebunker.GoogleLoginUrl", "http://mail.google.com/mail");
+	public static final String GoogleActionBaseUrl = System.getProperty("com.toubassi.filebunker.GoogleActionBaseUrl", "http://mail.google.com/mail");
+	
+	
 	protected TimeOutWebConversation createLoggedInConversation() throws VaultException
 	{	    	    
 		try {
@@ -65,10 +69,11 @@ public class GMailFileStore extends WebMailFileStore
 			// For now we assume a time out of 10 minutes.
 			TimeOutWebConversation wc = new TimeOutWebConversation(10*60);
 	
-			// For debugging with Charles.exe
-			// wc.setEnableProxy("localhost", 8888);
+			//For debugging with Charles.exe, also must uncomment deprecated
+			//call in TimeOutWebConversation
+			//wc.setEnableProxy("localhost", 8888);
 			
-			WebResponse wr = wc.getResponse("http://gmail.google.com/");
+			WebResponse wr = wc.getResponse(GoogleLoginUrl);
 			
 			String[] frameNames = wc.getFrameNames();
 			WebForm loginForm = null;
@@ -175,6 +180,7 @@ public class GMailFileStore extends WebMailFileStore
 			if (wr.getResponseCode() != 200) {
 			    throw new FailedLoginException("Failed to connect to gmail account " + email(), this);
 			}
+
 			return wc;
 		}
 		catch (VaultException e) {
@@ -188,7 +194,7 @@ public class GMailFileStore extends WebMailFileStore
     protected void disposeConversation(TimeOutWebConversation wc) throws VaultException
     {
         try {
-            WebResponse wr = wc.getResponse("https://gmail.google.com/gmail?logout");
+            WebResponse wr = wc.getResponse(GoogleActionBaseUrl + "?logout");
         }
         catch (Exception e) {
             throw new VaultException(e);
@@ -265,10 +271,10 @@ public class GMailFileStore extends WebMailFileStore
 		        String[] messageIds = (String[])messageIdToGroups.keySet().toArray(new String[messageIdToGroups.size()]);
 	
 			    // tr: move to trash
-				performAction(wc, messageIds, "http://gmail.google.com/gmail?search=inbox&view=tl&start=0", "tr");
+				performAction(wc, messageIds, GoogleActionBaseUrl + "?search=inbox&view=tl&start=0", "tr");
 	
 				// dl: delete forever
-				performAction(wc, messageIds, "http://gmail.google.com/gmail?search=trash&view=tl&start=0", "dl");
+				performAction(wc, messageIds, GoogleActionBaseUrl + "?search=trash&view=tl&start=0", "dl");
 				didDelete = true;
 		    }
 	    }
@@ -285,7 +291,7 @@ public class GMailFileStore extends WebMailFileStore
 
 	    try
 		{	
-			WebResponse wr = wc.getResponse("http://gmail.google.com/gmail?search=inbox&view=tl&start=0&init=1");
+			WebResponse wr = wc.getResponse(GoogleActionBaseUrl + "?search=inbox&view=tl&start=0&init=1");
 			String text = wr.getText();
 
 			Matcher matcher = utilizationPattern.matcher(text);
@@ -332,7 +338,7 @@ public class GMailFileStore extends WebMailFileStore
 	
 		        String[] messageIds = (String[])messageIdToGroups.keySet().toArray(new String[messageIdToGroups.size()]);
 	
-				performAction(wc, messageIds, "http://gmail.google.com/gmail?search=inbox&view=tl&start=0", "rc_^i");
+				performAction(wc, messageIds, GoogleActionBaseUrl + "?search=inbox&view=tl&start=0", "rc_^i");
             }
         }
         finally {
@@ -357,7 +363,7 @@ public class GMailFileStore extends WebMailFileStore
 		    
 			while (true) {
 			    int numResults = searchResults.size();
-				String queryUrl = "http://gmail.google.com/gmail?search=query&q=" + encodedSearchString + "&view=tl&start=" + numResults;
+				String queryUrl = GoogleActionBaseUrl + "?search=query&q=" + encodedSearchString + "&view=tl&start=" + numResults;
 				
 				WebResponse wr = wc.getResponse(queryUrl);
 	
