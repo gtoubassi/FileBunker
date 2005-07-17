@@ -1,8 +1,24 @@
 
 * Make sure everything is checked in.
 * run mkrelease on windows.
+	1. cd into $(FILEBUNKER)/build
+	2. mkrelease -version 1.1.2 -launcher ../../JavaLaunch/Release/JavaLaunch.exe
+		Note the path to the launcher can be a previous version of FileBunker.exe if
+		you have not built JavaLaunch.exe on windows.
+	3. Three new items will appear in $(FILEBUNKER)/release
+		a. FileBunker-1.1.2-win32 (The windows application directory and all resources)
+		b. FileBunker-1.1.2-win32.zip (zipped version of a)
+		c. FileBunker-1.1.2-src.zip (zipped source)
+	
 * Test using Testplan.txt in testplan directory.
 * Run mkrelease on linux.  Do quick smoke test.
+	1. cd into $(FILEBUNKER)/build
+	2. mkrelease -version 1.1.2 -launcher ../../JavaLaunch/JavaLaunch.pl
+	3. Two new items will appear in $(FILEBUNKER)/release
+		a. FileBunker-1.1.2-linux-gtk (The linux application directory and all resources)
+		b. FileBunker-1.1.2-linux-gtk.tar.bz2 (tar-bzip2'd version of a)
+		c. FileBunker-1.1.2-src.zip (zipped source- same as if done on windows)
+	
 * Make labels for FileBunker, and JavaLaunch (if necessary).  Can checkout by doing:
 	cvs -d:ext:gtoubassi@cvs.sf.net:/cvsroot/filebunker checkout FileBunker
 
@@ -20,6 +36,13 @@
 	5. Change your current directory to /incoming ("cd /incoming") 
 	6. Upload the desired files for the release ("put filename") 
 
-* Go to file release system.
+* Publish the new release files
+	1. Go to sourceforge filebunker admin page at http://sourceforge.net/project/admin/?group_id=118802
+	2. Click "file release".  You will be prompted to log in
+	3. Scroll to bottom, click "add release"
+	4. Give the new release a name (e.g. 1.1.2)
+	5. Fill out new release info, select files, etc.
+	
+* Download the application package for your platform, unpack, and perform simple smoke test.
 
 How to update website shell.sourceforge.net, /home/groups/f/fi/filebunker/htdocs
