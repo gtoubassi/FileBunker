@@ -7,6 +7,11 @@ Welcome to the source release of FileBunker.  FileBunker is a file backup
 application which uses one or more GMail accounts as a free, offsite backup
 repository.
 
+NOTE: This app is currently unsupported.  Several years ago the gmail UI
+changed which broke the backup functionality.  Any parties interested in
+fixing it are enthusiastically encouraged.  Or any parties interested in
+implementing a new backend on S3!
+
 Compiling FileBunker
 --------------------
 
